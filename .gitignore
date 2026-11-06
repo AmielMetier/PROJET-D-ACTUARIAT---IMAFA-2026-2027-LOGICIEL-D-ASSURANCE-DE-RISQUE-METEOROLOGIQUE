@@ -1,9 +1,30 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-.venv/
+*.so
+.Python
+env/
 venv/
+.venv/
+ENV/
+.pytest_cache/
 .ipynb_checkpoints/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Data cache & local exports
+data/cache/
+*.pdf
+!PROJET-ACTUARIAT- LOGICIEL D ASSURANCE DE RISQUE METEOROLOGIQUE.pdf
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
 Thumbs.db
-.pytest_cache/
