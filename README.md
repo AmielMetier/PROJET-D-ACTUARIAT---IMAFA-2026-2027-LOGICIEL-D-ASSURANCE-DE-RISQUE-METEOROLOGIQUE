@@ -11,42 +11,40 @@ Enseignant : **Marius AKRE**
 
 ## Présentation du projet
 
-Dans le cadre d'une création d'offre d'assurance paramétrique, ce projet vise à concevoir un logiciel complet de couverture contre les aléas météorologiques (en particulier la pluie) pour des commerçants dont l'activité dépend du climat.
+Dans le cadre d'une création d'offre d'assurance paramétrique, ce projet consiste à réaliser un logiciel permettant à des commerçants de protéger leur résultat d'exploitation contre les aléas météorologiques (notamment la pluie).
 
-L'objectif est de répondre aux besoins de trois départements de l'entreprise d'assurance :
-1. **Département Tarification** : tarifer une assurance annuelle garantissant un résultat d'exploitation positif ($R \ge 0$) chaque jour de l'année.
-2. **Département Commercial** : éditer et imprimer un devis clair pour le client (approche prospective).
-3. **Département R&D** : réaliser une analyse rétrospective de l'impact de l'assurance sur une année passée au choix, illustrée graphiquement.
-
-Le projet intègre également une **application web interactive (Streamlit)** responsive (mobile/desktop) et une connexion aux **données météo en temps réel et historiques** (API Open-Meteo, Infoclimat / NOAA).
+Le logiciel s'articule autour de trois volets principaux :
+1. **Département Tarification** : tarifer l'assurance demandée en fonction des paramètres client afin de lui garantir un résultat positif ($R \ge 0$) tout au long des 365 jours de l'année.
+2. **Département Commercial** : imprimer un devis clair pour le client (approche prospective).
+3. **Département R&D** : présenter une analyse rétrospective sur une année passée au choix avec représentation graphique (approche rétrospective).
 
 ---
 
-## Modélisation mathématique et actuarielle
+## Modélisation [Section I & II]
 
-### 1. Activité du commerçant
-Pour une journée $t$ avec un niveau pluviométrique $pl_t$ (en mm) et un niveau pivot $\overline{pl}$ fixé par le commerçant :
-- **Chiffre d'affaires journalier ($CA_t^{pl}$)** :
-  $$CA_t^{pl} = \begin{cases} 0 & \text{si } pl_t \ge \overline{pl} \\ f_t^{pl} \times CA & \text{si } 0 < pl_t < \overline{pl} \\ CA & \text{si } pl_t = 0 \end{cases} \quad \text{avec } f_t^{pl} = \frac{\overline{pl} - pl_t}{\overline{pl}}$$
-- **Résultat journalier ($R_t^{pl}$)** avec coûts fixes journaliers $Cf$ ($CA > Cf$) :
+### Notations
+- $pl_t$ : niveau pluviométrique à la date $t$
+- $\overline{pl}$ : niveau de pluie journalier pivot
+- $CA$ : chiffre d'affaires journalier maximum possible (avec $CA > Cf$)
+- $Cf$ : coûts fixes journaliers (électricité, abonnements, etc.)
+- $CA_t^{pl}$ : chiffre d'affaires à la date $t$
+- $R_t^{pl}$ : résultat à la date $t$
+
+### Relations
+- Facteur d'atténuation du chiffre d'affaires :
+  $$f_t^{pl} = \frac{\overline{pl} - pl_t}{\overline{pl}} \quad (0 < pl_t < \overline{pl})$$
+
+- Chiffre d'affaires journalier :
+  $$CA_t^{pl} = \begin{cases} 0 & \text{si } pl_t \ge \overline{pl} \\ f_t^{pl} \times CA & \text{si } 0 < pl_t < \overline{pl} \\ CA & \text{si } pl_t = 0 \end{cases}$$
+
+- Résultat journalier :
   $$R_t^{pl} = CA_t^{pl} - Cf$$
 
-### 2. Seuil de rentabilité journalier
-Le commerçant subit une perte journalière ($R_t^{pl} < 0$) dès que la pluie dépasse le seuil critique :
-$$pl^* = \overline{pl} \left(1 - \frac{Cf}{CA}\right)$$
+- **Seuil de rentabilité journalier** : le résultat est négatif ($R_t^{pl} < 0$) dès que :
+  $$pl_t > pl^* = \overline{pl}\left(1 - \frac{Cf}{CA}\right)$$
 
-### 3. Couverture d'assurance
-Le contrat garantit un résultat positif ou nul ($R \ge 0$) pour chacun des 365 jours de l'année. L'indemnité journalière versée par l'assureur est donc :
-$$I_t = \max(0, -R_t^{pl})$$
-
-Le résultat annuel non assuré est $R_{nass} = \sum_{t=1}^{365} R_t^{pl}$, et le résultat garanti avec assurance est :
-$$R_{ass} = \sum_{t=1}^{365} (R_t^{pl} + I_t) = R_{nass} + \sum_{t=1}^{365} I_t$$
-
-### 4. Tarification annuelle (Pricing)
-La **prime pure** annuelle correspond à l'espérance mathématique des pertes annuelles $\mathbb{E}[L]$ estimée sur l'historique climatique de la ville :
-$$P_{pure} = \mathbb{E}\left[\sum_{t=1}^{365} I_t\right]$$
-La prime commerciale finale intègre un chargement de sécurité ($\beta \cdot \sigma$) et un chargement pour frais de gestion ($\alpha \cdot P_{pure}$) :
-$$P = P_{pure} + \beta \cdot \sigma(L) + \alpha \cdot P_{pure}$$
+- **Garantie d'assurance** : indemnité journalière versée pour assurer $R \ge 0$ :
+  $$I_t = \max(0, -R_t^{pl})$$
 
 ---
 
@@ -56,18 +54,18 @@ $$P = P_{pure} + \beta \cdot \sigma(L) + \alpha \cdot P_{pure}$$
 .
 ├── src/assurance_meteo/
 │   ├── __init__.py
-│   ├── model.py           # Modélisation client, CA, résultat et indemnisation
-│   ├── weather.py         # Récupération météo temps réel & historique (Open-Meteo)
-│   ├── pricing.py         # Tarification actuarielle (prime pure & chargements)
-│   ├── devis.py           # Édition du devis client (Département commercial)
-│   └── retrospective.py   # Analyse rétrospective & visualisations (Département R&D)
-├── app.py                 # Interface Web & Mobile (Streamlit)
+│   ├── model.py           # Modélisation commerçant, CA, résultat et indemnités
+│   ├── weather.py         # Récupération des données météo (archives et temps réel)
+│   ├── pricing.py         # Tarification actuarielle (prime pure et chargements)
+│   ├── devis.py           # Édition de devis (Département commercial)
+│   └── retrospective.py   # Analyse rétrospective & graphiques (Département R&D)
+├── app.py                 # Interface Web / Mobile (Streamlit)
 ├── notebooks/
-│   └── 01_tarification_et_analyse_retrospective.ipynb  # Démonstration et validation
+│   └── 01_tarification_et_analyse_retrospective.ipynb  # Démonstration du projet
 ├── data/
 │   └── nice_1998_rain.csv # Données pluviométriques de référence (Nice 1998)
 ├── report/
-│   └── figures/           # Graphiques générés pour le rapport
+│   └── figures/           # Dossier pour les exports graphiques
 ├── requirements.txt       # Dépendances Python
 └── README.md
 ```
@@ -80,15 +78,11 @@ $$P = P_{pure} + \beta \cdot \sigma(L) + \alpha \cdot P_{pure}$$
 Python 3.10 ou supérieur.
 
 ```bash
-# 1. Cloner le dépôt
-git clone https://github.com/AmielMetier/PROJET-D-ACTUARIAT---IMAFA-2026-2027-LOGICIEL-D-ASSURANCE-DE-RISQUE-METEOROLOGIQUE.git
-cd PROJET-D-ACTUARIAT---IMAFA-2026-2027-LOGICIEL-D-ASSURANCE-DE-RISQUE-METEOROLOGIQUE
-
-# 2. Créer et activer l'environnement virtuel
+# Création et activation de l'environnement virtuel
 python -m venv .venv
 source .venv/bin/activate       # Sous Windows : .venv\Scripts\activate
 
-# 3. Installer les dépendances
+# Installation des dépendances
 pip install -r requirements.txt
 ```
 
@@ -96,39 +90,23 @@ pip install -r requirements.txt
 ```bash
 streamlit run app.py
 ```
-L'interface permet de tester interactivement la tarification, d'imprimer un devis et de visualiser l'analyse rétrospective sur n'importe quelle ville et année passée.
 
-### Lancement du Notebook
+### Lancement des notebooks
 ```bash
-jupyter lab notebooks/01_tarification_et_analyse_retrospective.ipynb
+jupyter lab
 ```
 
 ---
 
-## Exemple d'analyse rétrospective (Nice, 1998)
+## Calendrier des livrables
 
-Conformément à l'exemple d'illustration du sujet :
-- **Paramètres client** : Ville de Nice, $\overline{pl} = 10\text{ mm}$, $CA = 500\text{ €/j}$, $Cf = 200\text{ €/j}$ (soit $pl^* = 6\text{ mm/j}$).
-- **Résultat non assuré ($R_{nass}^{1998}$)** : $\approx 89\,000\text{ €}$.
-- **Prime payée a priori ($P^{1998}$)** : $3\,000\text{ €}$.
-- **Pertes subies évitées** : $\approx 4\,265\text{ €}$.
-- **Résultat net assuré ($R_{ass} - P$)** : $\approx 90\,270\text{ €}$.
-
-**Conclusion rétrospective** : S'assurer en 1998 a été financièrement favorable au commerçant niçois, la prime versée ($3\,000\text{ €}$) étant inférieure aux pertes réelles générées par les intempéries ($4\,265\text{ €}$).
-
-![Analyse rétrospective Nice 1998](report/figures/fig_retrospective_nice_1998.png)
+- **6 novembre** : Envoi de la composition des groupes.
+- **17 novembre** : Présentation de la version DRAFT (10 min).
+- **15 décembre** : Présentation finale (10 min) + remise du logiciel/script et du user guide.
 
 ---
 
-## Calendrier du projet
-
-- **6 novembre 2026** : Envoi de la composition des groupes.
-- **17 novembre 2026** : Présentation de la version DRAFT (10 min).
-- **15 décembre 2026** : Présentation finale (10 min) et remise du livrable (code + guide utilisateur).
-
----
-
-## Sources et références
-- Données historiques & prévisions en temps réel : [Open-Meteo API](https://open-meteo.com)
-- Climatologie et stations françaises : [Infoclimat](https://www.infoclimat.fr)
-- Archives climatiques internationales : [NOAA / NCEI](https://www.ncei.noaa.gov)
+## Références
+- Données météorologiques : [Open-Meteo API](https://open-meteo.com)
+- Climatologie France : [Infoclimat](https://www.infoclimat.fr)
+- National Centers for Environmental Information : [NOAA / NCEI](https://www.ncei.noaa.gov)
