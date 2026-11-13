@@ -16,7 +16,6 @@ from src.weather_api import get_coordinates, fetch_historical_precipitation, Wea
 
 st.set_page_config(
     page_title="Assurance Risque Météorologique | IMAFA",
-    page_icon="🌧️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -41,16 +40,16 @@ def missing_days_warning(n_missing: int) -> None:
     """Avertit l'utilisateur quand des jours sans donnée ont été comptés comme secs."""
     if n_missing > 0:
         st.warning(
-            f"⚠️ {n_missing} jour(s) sans donnée météo dans l'historique utilisé : ils sont comptés comme "
+            f"{n_missing} jour(s) sans donnée météo dans l'historique utilisé : ils sont comptés comme "
             f"des jours sans pluie, ce qui peut sous-estimer légèrement la prime."
         )
 
 # En-tête principal
-st.title("🌧️ Logiciel d'Assurance de Risque Météorologique")
+st.title("Logiciel d'Assurance de Risque Météorologique")
 st.caption("IMAFA 2026-2027 — Modélisation Actuarielle, Pricing & Analyse Rétrospective")
 
 # Sidebar : Paramètres du client
-st.sidebar.header("📋 Profil & Souscription")
+st.sidebar.header("Profil & Souscription")
 city = st.sidebar.selectbox(
     "Ville du commerce",
     options=CITY_CHOICES,
@@ -75,14 +74,14 @@ profile = ClientProfile(
 # Seuil critique automatique
 seuil_critique = profile.pl_pivot * (1 - profile.cf / profile.ca_max)
 st.sidebar.info(
-    f"💡 **Seuil de perte journalière** : à partir de **{seuil_critique:.2f} mm** de pluie, "
+    f"**Seuil de perte journalière** : à partir de **{seuil_critique:.2f} mm** de pluie, "
     f"le résultat d'exploitation devient négatif et l'assurance s'active."
 )
 
 tab_pricing, tab_retro, tab_guide = st.tabs([
-    "📊 Tarification & Devis (Prospective)",
-    "📈 Analyse Rétrospective (R&D)",
-    "📖 Guide d'Utilisation"
+    "Tarification & Devis (Prospective)",
+    "Analyse Rétrospective (R&D)",
+    "Guide d'Utilisation"
 ])
 
 # --- ONGLET 1 : PRICING & DEVIS ---
@@ -102,7 +101,7 @@ with tab_pricing:
         profile.subscription_date, hist_years, safety_rate, expense_rate
     )
 
-    if st.button("🚀 Récupérer les données météo temps réel & Calculer la prime", type="primary"):
+    if st.button("Récupérer les données météo temps réel & Calculer la prime", type="primary"):
         with st.spinner("Interrogation de l'API Météo et calcul actuariel en cours..."):
             try:
                 coords = get_coordinates(profile.city)
@@ -110,7 +109,7 @@ with tab_pricing:
                     st.error(f"Impossible de localiser la ville '{profile.city}'. Veuillez vérifier l'orthographe.")
                 else:
                     lat, lon, official_name = coords
-                    st.success(f"📍 Station localisée : **{official_name}** ({lat:.3f}°N, {lon:.3f}°E)")
+                    st.success(f"Station localisée : **{official_name}** ({lat:.3f}°N, {lon:.3f}°E)")
 
                     # Historique : périodes d'un an commençant au jour/mois de la souscription
                     latest_available = date.today() - timedelta(days=ARCHIVE_DELAY_DAYS)
@@ -146,14 +145,14 @@ with tab_pricing:
                         "missing_days": sum(p["missing_days"] for p in periods.values()),
                     }
             except WeatherAPIError as e:
-                st.error(f"🌐 {e}")
+                st.error(f"{e}")
             except ValueError as e:
-                st.error(f"❌ {e}")
+                st.error(f"{e}")
 
     pricing = st.session_state.get("pricing")
     if pricing and pricing["key"] != pricing_key:
         st.warning(
-            "✏️ Les paramètres ont changé depuis le dernier calcul : cliquez à nouveau sur le bouton "
+            "Les paramètres ont changé depuis le dernier calcul : cliquez à nouveau sur le bouton "
             "pour recalculer la prime avant d'éditer le devis."
         )
     elif pricing:
@@ -171,7 +170,7 @@ with tab_pricing:
         m1.metric("Prime Pure E[I]", f"{res['pure_premium']:,.2f} €")
         m2.metric("Écart-type Sinistres", f"{res['std_indemnity']:,.2f} €")
         m3.metric("Pire Année Historique", f"{res['max_historical_claim']:,.2f} €")
-        m4.metric("Prime Commerciale Annuelle", f"{res['commercial_premium']:,.2f} €", delta="Tarif final")
+        m4.metric("Prime Commerciale Annuelle", f"{res['commercial_premium']:,.2f} €")
 
         st.subheader("II. Devis Commercial")
         quote_ref = make_quote_ref(pricing["profile"])
@@ -182,7 +181,7 @@ with tab_pricing:
             history_label=pricing["history_label"],
         )
         st.download_button(
-            label=f"📄 Télécharger le Devis {quote_ref} (PDF)",
+            label=f"Télécharger le Devis {quote_ref} (PDF)",
             data=pdf_bytes,
             file_name=f"Devis_Assurance_Meteo_{quote_ref}.pdf",
             mime="application/pdf"
@@ -209,7 +208,7 @@ with tab_retro:
         f"réglés dans l'onglet Tarification (sécurité {safety_rate:.0%}, frais {expense_rate:.0%})."
     )
 
-    if st.button("🔍 Lancer l'analyse rétrospective sur l'année " + str(test_year)):
+    if st.button("Lancer l'analyse rétrospective sur l'année " + str(test_year)):
         with st.spinner(f"Récupération de la météo de {prior_start_year} à {test_year} pour {profile.city}..."):
             try:
                 coords = get_coordinates(profile.city)
@@ -243,8 +242,9 @@ with tab_retro:
                     st.metric(
                         f"Prime calculée a priori début {test_year} (P_a)",
                         f"{custom_premium:,.2f} €",
-                        delta=f"Prime pure {retro_pricing['pure_premium']:,.2f} € sur {len(prior)} années d'historique",
-                        delta_color="off"
+                    )
+                    st.caption(
+                        f"Prime pure {retro_pricing['pure_premium']:,.2f} € sur {len(prior)} années d'historique."
                     )
 
                     r1, r2, r3, r4 = st.columns(4)
@@ -255,13 +255,13 @@ with tab_retro:
 
                     if analysis["est_favorable"]:
                         st.success(
-                            f"✅ **Conclusion Rétrospective : S'assurer aurait été favorable au client en {test_year} !** "
+                            f"**Conclusion Rétrospective : S'assurer aurait été favorable au client en {test_year}.** "
                             f"La prime payée a priori ({custom_premium:,.0f} €) a été inférieure aux pertes évitées "
                             f"({analysis['pertes_evitees']:,.0f} €), procurant un gain net de **{analysis['gain_net_client']:+,.0f} €**."
                         )
                     else:
                         st.warning(
-                            f"ℹ️ **Conclusion Rétrospective : S'assurer n'aurait pas été favorable au client en {test_year}.** "
+                            f"**Conclusion Rétrospective : S'assurer n'aurait pas été favorable au client en {test_year}.** "
                             f"La prime payée a priori ({custom_premium:,.0f} €) a dépassé les pertes évitées "
                             f"({analysis['pertes_evitees']:,.0f} €) : écart de **{analysis['gain_net_client']:+,.0f} €** pour le client."
                         )
@@ -269,13 +269,13 @@ with tab_retro:
                     st.plotly_chart(plot_retrospective_comparison(analysis, test_year), use_container_width=True)
                     st.plotly_chart(plot_cumulative_results(df_year_details, test_year), use_container_width=True)
             except WeatherAPIError as e:
-                st.error(f"🌐 {e}")
+                st.error(f"{e}")
             except ValueError as e:
-                st.error(f"❌ {e}")
+                st.error(f"{e}")
 
 # --- ONGLET 3 : USER GUIDE ---
 with tab_guide:
-    st.subheader("📖 Guide Utilisateur & Documentation Modélisation")
+    st.subheader("Guide Utilisateur & Documentation Modélisation")
     st.markdown("""
     ### Modèle Mathématique
     Pour chaque jour $t$ :
