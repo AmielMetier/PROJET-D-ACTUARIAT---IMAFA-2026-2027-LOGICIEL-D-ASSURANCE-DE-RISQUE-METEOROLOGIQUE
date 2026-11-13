@@ -1,5 +1,5 @@
 # Interface Web & Visualisations
-streamlit>=1.35.0
+streamlit>=1.45.0
 plotly>=5.22.0
 
 # Manipulation de données & Calculs actuariels
