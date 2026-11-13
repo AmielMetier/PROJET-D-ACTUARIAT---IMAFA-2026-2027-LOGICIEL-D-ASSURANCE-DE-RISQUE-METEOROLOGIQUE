@@ -22,6 +22,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Première année disponible dans les archives Open-Meteo
+FIRST_ARCHIVE_YEAR = 1940
+
 # En-tête principal
 st.title("🌧️ Logiciel d'Assurance de Risque Météorologique")
 st.caption("IMAFA 2026-2027 — Modélisation Actuarielle, Pricing & Analyse Rétrospective")
@@ -121,26 +124,53 @@ with tab_retro:
         "Évaluez si l'assurance aurait été favorable à ce client pour une année passée quelconque *a*."
     )
     
-    col_a, col_p = st.columns(2)
-    with col_a:
-        test_year = st.number_input("Sélectionner une année passée (a)", min_value=1960, max_value=date.today().year - 1, value=1998)
-    with col_p:
-        custom_premium = st.number_input(
-            "Prime annuelle théorique payée au début de l'année a (P_a en €)",
-            min_value=0.0,
-            value=3000.0,
-            step=100.0
-        )
+    test_year = int(st.number_input(
+        "Sélectionner une année passée (a)",
+        min_value=FIRST_ARCHIVE_YEAR + 1,
+        max_value=date.today().year - 1,
+        value=1998
+    ))
+    # La prime P_a est calculée a priori : uniquement avec la météo antérieure à l'année a.
+    prior_start_year = max(FIRST_ARCHIVE_YEAR, test_year - hist_years)
+    st.info(
+        f"La prime P_a est **calculée par le logiciel** comme elle l'aurait été début {test_year} : "
+        f"à partir de la météo de {prior_start_year} à {test_year - 1} uniquement, avec les chargements "
+        f"réglés dans l'onglet Tarification (sécurité {safety_rate:.0%}, frais {expense_rate:.0%})."
+    )
 
     if st.button("🔍 Lancer l'analyse rétrospective sur l'année " + str(test_year)):
-        with st.spinner(f"Récupération de la météo de {test_year} pour {profile.city}..."):
+        with st.spinner(f"Récupération de la météo de {prior_start_year} à {test_year} pour {profile.city}..."):
             coords = get_coordinates(profile.city)
-            if coords:
+            if not coords:
+                st.error(f"Impossible de localiser la ville '{profile.city}'. Veuillez vérifier l'orthographe.")
+            else:
                 lat, lon, _ = coords
-                df_year = fetch_historical_precipitation(lat, lon, f"{test_year}-01-01", f"{test_year}-12-31")
+                df_all = fetch_historical_precipitation(lat, lon, f"{prior_start_year}-01-01", f"{test_year}-12-31")
+                df_all["year"] = df_all["date"].dt.year
+
+                # Tarification a priori sur les années strictement antérieures à a
+                df_prior = df_all[df_all["year"] < test_year]
+                prior_dict = {yr: grp["precipitation"] for yr, grp in df_prior.groupby("year")}
+                retro_pricing = price_contract_historical(
+                    prior_dict,
+                    profile,
+                    safety_margin_rate=safety_rate,
+                    expense_rate=expense_rate
+                )
+                custom_premium = retro_pricing["commercial_premium"]
+
+                # Résultats a posteriori sur l'année a
+                df_year = df_all[df_all["year"] == test_year].reset_index(drop=True)
                 analysis = run_retrospective_analysis(df_year["precipitation"], profile, custom_premium)
                 df_year_details = analysis["details_journaliers"]
                 df_year_details["date"] = df_year["date"]
+
+                st.metric(
+                    f"Prime calculée a priori début {test_year} (P_a)",
+                    f"{custom_premium:,.2f} €",
+                    delta=f"Prime pure {retro_pricing['pure_premium']:,.2f} € sur {len(prior_dict)} années d'historique",
+                    delta_color="off"
+                )
 
                 r1, r2, r3, r4 = st.columns(4)
                 r1.metric("Résultat Non Assuré (R_nass)", f"{analysis['r_nass']:,.2f} €")
