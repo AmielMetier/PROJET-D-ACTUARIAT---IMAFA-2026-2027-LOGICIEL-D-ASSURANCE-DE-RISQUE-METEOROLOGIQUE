@@ -3,20 +3,42 @@ Module de génération de Devis Commercial (PDF).
 Permet d'imprimer un devis officiel conforme aux exigences du sujet.
 """
 
-from typing import Dict, Any
+import hashlib
+from typing import Dict, Any, Optional
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, date
+from xml.sax.saxutils import escape
 from .simulation import ClientProfile
+from .pricing import coverage_end
+
+
+def make_quote_ref(profile: ClientProfile, issued: Optional[date] = None) -> str:
+    """
+    Référence unique et reproductible du devis : date d'émission + empreinte des données client.
+    Ex. DEV-20261113-3F9A2C
+    """
+    issued = issued or date.today()
+    key = f"{profile.city}|{profile.ca_max}|{profile.cf}|{profile.pl_pivot}|{profile.subscription_date}"
+    digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:6].upper()
+    return f"DEV-{issued:%Y%m%d}-{digest}"
 
 
 def generate_devis_pdf(
     profile: ClientProfile,
     pricing_res: Dict[str, Any],
-    quote_ref: str = "DEV-2026-001"
+    quote_ref: Optional[str] = None,
+    station_label: Optional[str] = None,
+    history_label: Optional[str] = None,
 ) -> bytes:
     """
     Génère un devis d'assurance météorologique au format PDF.
+
+    :param station_label: point de mesure météo retenu (nom officiel de la localité)
+    :param history_label: période d'historique utilisée pour tarifer (ex. "2010 à 2025, 15 années")
     """
+    quote_ref = quote_ref or make_quote_ref(profile)
+    sub = date.fromisoformat(profile.subscription_date)
+    end = coverage_end(sub)
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
@@ -66,9 +88,9 @@ def generate_devis_pdf(
         # Tableau des informations client
         elements.append(Paragraph("1. Informations du Souscripteur", section_style))
         client_data = [
-            ["Ville d'activité :", profile.city, "Date de prise d'effet :", profile.subscription_date],
+            ["Ville d'activité :", profile.city, "Date de prise d'effet :", f"{sub:%d/%m/%Y}"],
             ["Chiffre d'Affaires Max Journalier (CA) :", f"{profile.ca_max:,.2f} €", "Coûts Fixes Journaliers (Cf) :", f"{profile.cf:,.2f} €"],
-            ["Seuil Pluviométrique Pivot (pl_bar) :", f"{profile.pl_pivot:.1f} mm", "Durée du contrat :", "365 jours"],
+            ["Seuil Pluviométrique Pivot (pl_bar) :", f"{profile.pl_pivot:.1f} mm", "Fin de couverture :", f"{end:%d/%m/%Y} (365 jours)"],
         ]
         t_client = Table(client_data, colWidths=[150, 110, 150, 100])
         t_client.setStyle(TableStyle([
@@ -92,6 +114,14 @@ def generate_devis_pdf(
             f"l'indemnité compense l'intégralité du déficit d'exploitation journalier (perte maximale couverte : {profile.cf:,.2f} €/jour)."
         )
         elements.append(Paragraph(garanties_text, styles["Normal"]))
+        if station_label or history_label:
+            base_text = "Tarif établi à partir des précipitations journalières réelles (source : Open-Meteo)"
+            if station_label:
+                base_text += f" mesurées à <b>{escape(station_label)}</b>"
+            if history_label:
+                base_text += f", sur les périodes de couverture équivalentes du {escape(history_label)}"
+            elements.append(Spacer(1, 6))
+            elements.append(Paragraph(base_text + ".", styles["Normal"]))
         elements.append(Spacer(1, 15))
 
         # Tableau de tarification
@@ -100,7 +130,8 @@ def generate_devis_pdf(
             ["Composante", "Montant"],
             ["Prime Pure Technique (E[Indemnités])", f"{pricing_res['pure_premium']:,.2f} €"],
             ["Chargement de Sécurité Actuariel", f"{pricing_res['safety_loading']:,.2f} €"],
-            ["Prime Commerciale Annuelle (TTC)", f"{pricing_res['commercial_premium']:,.2f} €"],
+            ["Frais de Gestion & Marge Commerciale", f"{pricing_res['expense_loading']:,.2f} €"],
+            ["Prime Commerciale Annuelle (hors taxes)", f"{pricing_res['commercial_premium']:,.2f} €"],
         ]
         t_prem = Table(prem_data, colWidths=[300, 210])
         t_prem.setStyle(TableStyle([
@@ -117,7 +148,11 @@ def generate_devis_pdf(
         elements.append(Spacer(1, 25))
 
         # Mention de souscription
-        elements.append(Paragraph("Devis valable 30 jours à compter de sa date d'émission. Bon pour accord :", styles["Italic"]))
+        elements.append(Paragraph(
+            "Prime payable en une fois à la date de prise d'effet. Montant hors taxe sur les conventions d'assurance. "
+            "Devis valable 30 jours à compter de sa date d'émission. Bon pour accord :",
+            styles["Italic"]
+        ))
         doc.build(elements)
         buffer.seek(0)
         return buffer.getvalue()
@@ -126,9 +161,9 @@ def generate_devis_pdf(
         # Fallback textuel simple si reportlab n'est pas encore installé
         simple_text = f"""DEVIS ASSURANCE METEOROLOGIQUE - {quote_ref}
 Ville : {profile.city}
-Date : {profile.subscription_date}
+Couverture : du {sub:%d/%m/%Y} au {end:%d/%m/%Y}
 CA max: {profile.ca_max} EUR, Coûts fixes: {profile.cf} EUR, Pivot pluie: {profile.pl_pivot} mm
 Prime Pure: {pricing_res['pure_premium']:.2f} EUR
-Prime Commerciale Annuelle: {pricing_res['commercial_premium']:.2f} EUR
+Prime Commerciale Annuelle (hors taxes): {pricing_res['commercial_premium']:.2f} EUR
 """
         return simple_text.encode("utf-8")

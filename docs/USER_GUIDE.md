@@ -51,12 +51,19 @@ Dans la barre latérale gauche, renseignez les paramètres du commerçant :
 #### Étape 2 : Tarification Prospective & Devis (Onglet 1)
 1. Ajustez si souhaité le nombre d'années d'historique (5 à 30 ans), le chargement de sécurité et les frais de gestion.
 2. Cliquez sur **"Récupérer les données météo temps réel & Calculer la prime"**.
+   - Le contrat couvre les **365 jours à partir de la date de souscription** (qui ne peut pas être dans le passé).
+   - La prime est estimée sur les périodes équivalentes des années passées : pour une souscription au 13/11, chaque année d'historique va du 13/11 au 12/11 suivant. Seules les périodes complètes sont retenues.
+   - Les jours sans donnée météo sont comptés comme secs et signalés par un avertissement ; une période où plus de 5 % des jours manquent est écartée.
 3. Les métriques actuarielles s'affichent :
    - Prime pure technique $\mathbb{E}[I]$
    - Écart-type des sinistres annuels
    - Charge de sinistralité maximale historique
    - Prime commerciale finale
-4. Cliquez sur **"Télécharger le Devis Officiel (PDF)"** pour obtenir le document prêt à être signé.
+4. Cliquez sur **"Télécharger le Devis (PDF)"** pour obtenir le document prêt à être signé. Il porte une référence unique (`DEV-AAAAMMJJ-XXXXXX`), les dates de couverture, le détail de la prime (pure, sécurité, frais) et la source météo utilisée.
+
+> Si vous modifiez un paramètre (profil client ou chargements) après le calcul, le devis est masqué jusqu'à ce que vous recalculiez la prime : un devis ne peut donc jamais associer un profil à la prime d'un autre.
+>
+> Si le service météo est injoignable, le logiciel réessaie 3 fois puis affiche un message d'erreur au lieu de planter.
 
 #### Étape 3 : Analyse Rétrospective / Backtesting (Onglet 2)
 1. Choisissez une année passée $a$ (ex: 1998).

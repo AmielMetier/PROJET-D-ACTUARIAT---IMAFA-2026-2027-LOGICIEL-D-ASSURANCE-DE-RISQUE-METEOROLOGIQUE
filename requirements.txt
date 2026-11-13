@@ -5,7 +5,6 @@ plotly>=5.22.0
 # Manipulation de données & Calculs actuariels
 pandas>=2.2.0
 numpy>=1.26.0
-scipy>=1.13.0
 
 # Requêtes API Météo (Temps réel & Historique)
 requests>=2.31.0
