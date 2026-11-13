@@ -41,8 +41,8 @@ def run_retrospective_analysis(
     # Cumuls temporels journaliers pour les graphiques
     sim_df["cum_r_nass"] = sim_df["r_nass"].cumsum()
     sim_df["cum_r_ass"] = sim_df["r_ass_brut"].cumsum()
-    # Répartition journalière de la prime sur 365 jours pour visualiser la courbe nette
-    sim_df["cum_r_net"] = sim_df["cum_r_ass"] - (annual_premium * (sim_df.reset_index().index + 1) / len(sim_df))
+    # La prime est payée en une fois à la souscription (début d'année) : elle pèse dès le premier jour
+    sim_df["cum_r_net"] = sim_df["cum_r_ass"] - annual_premium
 
     return {
         "r_nass": r_nass_total,
