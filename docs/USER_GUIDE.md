@@ -39,7 +39,7 @@ L'interface s'ouvre automatiquement dans votre navigateur par défaut à l'adres
 
 #### Étape 1 : Saisie du Profil Client (Volet Latéral)
 Dans la barre latérale gauche, renseignez les paramètres du commerçant :
-- **Ville du commerce** (ex: *Nice*, *Marseille*, *Bordeaux*...)
+- **Ville du commerce** : choisissez-la dans le menu déroulant (44 grandes villes françaises, triées par ordre alphabétique ; tapez les premières lettres pour filtrer la liste). Si la ville n'y figure pas, tapez son nom en entier puis validez avec Entrée : n'importe quelle ville reconnue par le service météo est acceptée (ex. *Lorient*).
 - **Chiffre d'affaires journalier maximal ($CA$)** : réalisé par temps sec.
 - **Coûts fixes journaliers ($Cf$)** : frais incompressibles quotidiens ($CA > Cf$).
 - **Niveau de pluie pivot ($\bar{pl}$)** : seuil journalier en millimètres au-delà duquel l'activité s'arrête ($CA = 0$).

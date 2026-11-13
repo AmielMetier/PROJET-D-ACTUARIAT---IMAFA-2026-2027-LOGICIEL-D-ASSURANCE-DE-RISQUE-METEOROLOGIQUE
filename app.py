@@ -26,6 +26,16 @@ FIRST_ARCHIVE_YEAR = 1940
 # Les archives Open-Meteo sont publiées avec quelques jours de retard
 ARCHIVE_DELAY_DAYS = 7
 
+# Villes proposées dans le menu déroulant (toute autre ville peut être tapée directement)
+CITY_CHOICES = sorted([
+    "Ajaccio", "Amiens", "Angers", "Annecy", "Avignon", "Bastia", "Bayonne", "Besançon",
+    "Biarritz", "Bordeaux", "Brest", "Caen", "Cannes", "Clermont-Ferrand", "Dijon",
+    "Grenoble", "La Rochelle", "Le Havre", "Le Mans", "Lille", "Limoges", "Lyon",
+    "Marseille", "Metz", "Montpellier", "Mulhouse", "Nancy", "Nantes", "Nice", "Nîmes",
+    "Orléans", "Paris", "Pau", "Perpignan", "Poitiers", "Reims", "Rennes", "Rouen",
+    "Saint-Étienne", "Saint-Malo", "Strasbourg", "Toulon", "Toulouse", "Tours",
+])
+
 
 def missing_days_warning(n_missing: int) -> None:
     """Avertit l'utilisateur quand des jours sans donnée ont été comptés comme secs."""
@@ -41,7 +51,14 @@ st.caption("IMAFA 2026-2027 — Modélisation Actuarielle, Pricing & Analyse Ré
 
 # Sidebar : Paramètres du client
 st.sidebar.header("📋 Profil & Souscription")
-city = st.sidebar.text_input("Ville du commerce", value="Nice")
+city = st.sidebar.selectbox(
+    "Ville du commerce",
+    options=CITY_CHOICES,
+    index=CITY_CHOICES.index("Nice"),
+    accept_new_options=True,
+    placeholder="Choisir ou taper une ville",
+    help="Choisissez une ville dans la liste, ou tapez le nom de n'importe quelle autre ville puis validez avec Entrée.",
+) or "Nice"
 ca_max = st.sidebar.number_input("Chiffre d'Affaires Max Journalier (€)", min_value=100.0, value=1000.0, step=50.0)
 cf = st.sidebar.number_input("Coûts Fixes Journaliers (€)", min_value=10.0, max_value=ca_max - 1.0, value=400.0, step=20.0)
 pl_pivot = st.sidebar.number_input("Niveau de Pluie Pivot (mm)", min_value=1.0, value=10.0, step=0.5)
