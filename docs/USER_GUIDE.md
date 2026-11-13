@@ -60,7 +60,7 @@ Dans la barre latérale gauche, renseignez les paramètres du commerçant :
 
 #### Étape 3 : Analyse Rétrospective / Backtesting (Onglet 2)
 1. Choisissez une année passée $a$ (ex: 1998).
-2. Indiquez la prime annuelle $P_a$ qui aurait été payée au début de l'année $a$.
+2. La prime annuelle $P_a$ n'est pas à saisir : le logiciel la calcule **a priori**, comme il l'aurait fait au début de l'année $a$, en n'utilisant que la météo des années strictement antérieures à $a$ (nombre d'années d'historique et chargements réglés dans l'onglet Tarification ; les archives commencent en 1940).
 3. Cliquez sur **"Lancer l'analyse rétrospective"**.
 4. Le logiciel affiche la comparaison chiffrée ($R_{nass}$, $R_{ass}$, $P_a$, $R_{net}$) et deux graphiques interactifs :
    - Comparatif en barres des agrégats annuels.

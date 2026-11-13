@@ -71,3 +71,18 @@ def test_example_from_subject():
     analysis = run_retrospective_analysis(s, profile, annual_premium=3000.0)
     # Test de la relation net = brut - prime
     assert analysis["r_net"] == analysis["r_ass"] - 3000.0
+
+
+def test_a_priori_premium_uses_only_given_years():
+    """La prime est la moyenne chargée des indemnités des seules années fournies."""
+    from src.pricing import price_contract_historical
+
+    profile = ClientProfile(ca_max=1000.0, cf=400.0, pl_pivot=10.0, city="Nice", subscription_date="1998-01-01")
+    # 1996 : 10 jours de forte pluie => 10 * 400 = 4000 € ; 1997 : année sèche => 0 €
+    prior = {
+        1996: pd.Series([12.0] * 10 + [0.0] * 355),
+        1997: pd.Series([0.0] * 365),
+    }
+    res = price_contract_historical(prior, profile, safety_margin_rate=0.10, expense_rate=0.15)
+    assert res["pure_premium"] == pytest.approx(2000.0)
+    assert res["commercial_premium"] == pytest.approx(2000.0 * 1.10 / 0.85)
