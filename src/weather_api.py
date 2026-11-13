@@ -1,6 +1,9 @@
 """
 Module de récupération des données météorologiques en temps réel et historiques.
-Utilise l'API Open-Meteo (libre d'accès, données mondiales et françaises fiables).
+Utilise l'API Open-Meteo (libre d'accès, sans clé).
+
+Les précipitations historiques proviennent de réanalyses (ERA5 / ERA5-Land) : ce sont des valeurs
+calculées sur un point de grille d'environ 10 à 25 km, et non les relevés d'une station au sol.
 """
 
 import time
@@ -14,6 +17,8 @@ ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 
 # Nombre de tentatives en cas de coupure réseau ou d'erreur serveur (5xx)
 MAX_ATTEMPTS = 3
+# Pays recherché en priorité (les clients sont des commerçants français)
+DEFAULT_COUNTRY = "FR"
 
 
 class WeatherAPIError(Exception):
@@ -52,18 +57,34 @@ def _get_json(url: str, params: dict, timeout: int) -> dict:
     )
 
 
-def get_coordinates(city_name: str) -> Optional[Tuple[float, float, str]]:
+def _search(city_name: str, country_code: Optional[str]) -> list:
+    params = {"name": city_name.strip(), "count": 10, "language": "fr", "format": "json"}
+    if country_code:
+        params["countryCode"] = country_code
+    return _get_json(GEOCODING_URL, params, timeout=10).get("results") or []
+
+
+def get_coordinates(
+    city_name: str,
+    country_code: Optional[str] = DEFAULT_COUNTRY
+) -> Optional[Tuple[float, float, str]]:
     """
-    Récupère la latitude, longitude et nom officiel d'une ville via l'API de géocodage.
+    Récupère la latitude, longitude et nom complet d'une ville via l'API de géocodage.
+
+    La recherche se fait d'abord en France, ce qui évite de tomber sur une ville homonyme étrangère
+    (ex. « Nice » aux États-Unis) ; à défaut, elle est étendue au monde entier. Parmi les résultats,
+    la localité la plus peuplée est retenue (une commune plutôt qu'un lieu-dit du même nom).
+
     Retourne None si la ville est introuvable ; lève WeatherAPIError si le service est injoignable.
     """
-    params = {"name": city_name, "count": 1, "language": "fr", "format": "json"}
-    data = _get_json(GEOCODING_URL, params, timeout=10)
-    results = data.get("results") or []
+    results = _search(city_name, country_code) if country_code else []
+    if not results:
+        results = _search(city_name, None)
     if not results:
         return None
-    res = results[0]
-    label = f"{res.get('name')}, {res.get('admin1', '')} ({res.get('country_code', '')})"
+    res = max(results, key=lambda r: r.get("population") or 0)
+    parts = [res.get("name"), res.get("admin1"), res.get("country")]
+    label = ", ".join(p for p in parts if p)
     return float(res["latitude"]), float(res["longitude"]), label
 
 

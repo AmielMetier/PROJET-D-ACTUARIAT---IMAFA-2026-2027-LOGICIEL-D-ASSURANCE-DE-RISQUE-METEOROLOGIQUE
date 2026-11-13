@@ -26,3 +26,6 @@ data/cache/
 # OS
 .DS_Store
 Thumbs.db
+
+# Configuration locale de Claude Code
+.claude/
