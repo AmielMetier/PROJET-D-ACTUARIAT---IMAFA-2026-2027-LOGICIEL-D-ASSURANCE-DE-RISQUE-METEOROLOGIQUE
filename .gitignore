@@ -8,6 +8,8 @@ env/
 venv/
 .venv/
 ENV/
+.pytest_cache/
+.ipynb_checkpoints/
 
 # Streamlit
 .streamlit/secrets.toml

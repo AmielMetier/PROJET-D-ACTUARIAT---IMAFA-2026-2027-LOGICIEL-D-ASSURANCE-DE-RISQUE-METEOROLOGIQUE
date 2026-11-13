@@ -1,6 +1,8 @@
 # Manuel d'Utilisation (User Guide)
 ## Logiciel d'Assurance de Risque Météorologique
-**Master IMAFA 2026-2027 — Marius AKRE**
+**Polytech Nice Sophia (MAM, parcours IMAFA 2026-2027)**  
+Équipe : Amiel Metier, Tahitoa Senis, Nicolas Muratore, Lucas Diguet, Gabriel Ferré  
+Enseignant : Marius AKRE
 
 ---
 
