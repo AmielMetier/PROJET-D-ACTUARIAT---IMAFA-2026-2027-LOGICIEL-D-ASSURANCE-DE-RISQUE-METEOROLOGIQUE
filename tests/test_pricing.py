@@ -102,6 +102,23 @@ def test_a_priori_premium_uses_only_given_years():
         1996: pd.Series([12.0] * 10 + [0.0] * 355),
         1997: pd.Series([0.0] * 365),
     }
-    res = price_contract_historical(prior, profile, safety_margin_rate=0.10, expense_rate=0.15)
+    res = price_contract_historical(prior, profile, safety_beta=0.30, expense_rate=0.15)
     assert res["pure_premium"] == pytest.approx(2000.0)
-    assert res["commercial_premium"] == pytest.approx(2000.0 * 1.10 / 0.85)
+    # Écart-type (ddof=1) de {4000, 0} = 2000 * racine(2)
+    sigma = 2000.0 * 2 ** 0.5
+    assert res["std_indemnity"] == pytest.approx(sigma)
+    assert res["safety_loading"] == pytest.approx(0.30 * sigma)
+    assert res["commercial_premium"] == pytest.approx((2000.0 + 0.30 * sigma) / 0.85)
+
+
+def test_safety_loading_grows_with_risk_variability():
+    """À prime pure égale, un risque plus irrégulier doit coûter plus cher."""
+    from src.pricing import price_contract_historical
+
+    profile = ClientProfile(ca_max=1000.0, cf=400.0, pl_pivot=10.0, city="Nice", subscription_date="1998-01-01")
+    heavy = lambda n: pd.Series([12.0] * n + [0.0] * (365 - n))
+    stable = price_contract_historical({1: heavy(5), 2: heavy(5)}, profile)      # 2000 € chaque année
+    volatile = price_contract_historical({1: heavy(10), 2: heavy(0)}, profile)   # 4000 € puis 0 €
+    assert stable["pure_premium"] == pytest.approx(volatile["pure_premium"])
+    assert stable["safety_loading"] == pytest.approx(0.0)
+    assert volatile["commercial_premium"] > stable["commercial_premium"]
