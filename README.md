@@ -7,6 +7,8 @@ Enseignant : **Marius AKRE**
 - Amiel Metier
 - Tahitoa Senis
 - Nicolas Muratore
+- Lucas Diguet
+- Gabriel Ferré
 
 ---
 
