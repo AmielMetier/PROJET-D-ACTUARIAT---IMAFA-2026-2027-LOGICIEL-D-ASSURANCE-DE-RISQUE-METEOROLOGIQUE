@@ -1,8 +1,9 @@
-# Versions figées : l'application est testée avec exactement ces versions (Python 3.11).
+# Versions figées pour l'application et les tests (Python 3.11).
 
 # Interface Web & Visualisations
 streamlit==1.61.1
 plotly==6.9.0
+matplotlib>=3.7.0
 
 # Manipulation de données & Calculs actuariels
 pandas==2.3.3
@@ -14,6 +15,7 @@ requests==2.32.5
 # Génération de Devis PDF
 reportlab==5.1.0
 
-# Tests & Qualité (pypdf sert uniquement à relire le devis dans les tests)
+# Tests, Qualité & Notebooks (pypdf sert uniquement à relire le devis dans les tests)
 pytest==9.1.1
 pypdf==7.0.0
+jupyterlab>=4.0.0

@@ -62,7 +62,7 @@ def require_location(coords, city_name: str):
 
 # En-tête principal
 st.title("Logiciel d'Assurance de Risque Météorologique")
-st.caption("IMAFA 2026-2027 — Modélisation Actuarielle, Pricing & Analyse Rétrospective")
+st.caption("IMAFA 2026-2027 — Modélisation Actuarielle, Pricing & Analyse Rétrospective | Enseignant : Marius AKRE")
 
 # ---------------------------------------------------------------------------
 # Barre latérale : profil du client et paramètres actuariels (communs aux deux onglets)
