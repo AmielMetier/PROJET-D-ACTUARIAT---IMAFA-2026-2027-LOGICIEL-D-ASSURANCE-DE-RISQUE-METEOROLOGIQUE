@@ -1,19 +1,21 @@
+# Versions figées pour l'application et les tests (Python 3.11).
+
 # Interface Web & Visualisations
-streamlit>=1.35.0
-plotly>=5.22.0
+streamlit==1.61.1
+plotly==6.9.0
 matplotlib>=3.7.0
 
 # Manipulation de données & Calculs actuariels
-pandas>=2.2.0
-numpy>=1.26.0
-scipy>=1.13.0
+pandas==2.3.3
+numpy==2.3.5
 
 # Requêtes API Météo (Temps réel & Historique)
-requests>=2.31.0
+requests==2.32.5
 
 # Génération de Devis PDF
-reportlab>=4.2.0
+reportlab==5.1.0
 
-# Tests, Qualité & Notebooks
-pytest>=8.0.0
+# Tests, Qualité & Notebooks (pypdf sert uniquement à relire le devis dans les tests)
+pytest==9.1.1
+pypdf==7.0.0
 jupyterlab>=4.0.0

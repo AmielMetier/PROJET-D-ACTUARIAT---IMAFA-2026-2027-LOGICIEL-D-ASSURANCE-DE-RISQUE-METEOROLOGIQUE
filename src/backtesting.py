@@ -7,9 +7,10 @@ Compare pour une année 'a' quelconque dans le passé:
 - R_net = R_ass - P_a (Résultat annuel net de la prime)
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 import pandas as pd
 from .simulation import ClientProfile, simulate_year
+from .pricing import price_contract_historical
 
 
 def run_retrospective_analysis(
@@ -41,8 +42,8 @@ def run_retrospective_analysis(
     # Cumuls temporels journaliers pour les graphiques
     sim_df["cum_r_nass"] = sim_df["r_nass"].cumsum()
     sim_df["cum_r_ass"] = sim_df["r_ass_brut"].cumsum()
-    # Répartition journalière de la prime sur 365 jours pour visualiser la courbe nette
-    sim_df["cum_r_net"] = sim_df["cum_r_ass"] - (annual_premium * (sim_df.reset_index().index + 1) / len(sim_df))
+    # La prime est payée en une fois à la souscription (début d'année) : elle pèse dès le premier jour
+    sim_df["cum_r_net"] = sim_df["cum_r_ass"] - annual_premium
 
     return {
         "r_nass": r_nass_total,
@@ -55,3 +56,69 @@ def run_retrospective_analysis(
         "est_favorable": est_favorable,
         "details_journaliers": sim_df
     }
+
+
+def run_multi_year_backtest(
+    calendar_periods: Dict[int, Dict[str, Any]],
+    profile: ClientProfile,
+    years: List[int],
+    hist_years: int,
+    safety_beta: float,
+    expense_rate: float,
+) -> Dict[str, Any]:
+    """
+    Rejoue le contrat sur plusieurs années passées, chacune tarifée a priori.
+
+    Pour chaque année a : la prime P_a est calculée au 1er janvier de a avec les `hist_years`
+    années complètes qui précèdent (et elles seules), puis comparée aux indemnités réellement
+    versées pendant a. C'est le point de vue de l'assureur comme celui du client.
+
+    :param calendar_periods: sortie de split_into_coverage_periods en années civiles (1er janvier)
+    :param years: années à rejouer
+    :return: {"table": DataFrame par année, "summary": indicateurs agrégés}
+    """
+    rows = []
+    for a in years:
+        if a not in calendar_periods:
+            continue
+        prior_years = [y for y in sorted(calendar_periods) if a - hist_years <= y < a]
+        if len(prior_years) < 2:
+            continue  # pas assez d'historique pour tarifer cette année
+        pricing = price_contract_historical(
+            {y: calendar_periods[y]["precipitation"] for y in prior_years},
+            profile,
+            safety_beta=safety_beta,
+            expense_rate=expense_rate,
+        )
+        sim_df = simulate_year(calendar_periods[a]["precipitation"], profile)
+        premium = pricing["commercial_premium"]
+        indemnities = float(sim_df["indemnity"].sum())
+        rows.append({
+            "annee": a,
+            "prime": premium,
+            "prime_pure": pricing["pure_premium"],
+            "indemnites": indemnities,
+            "r_nass": float(sim_df["r_nass"].sum()),
+            "r_ass": float(sim_df["r_ass_brut"].sum()),
+            "r_net": float(sim_df["r_ass_brut"].sum()) - premium,
+            "gain_client": indemnities - premium,
+            "favorable": indemnities > premium,
+            "annees_historique": len(prior_years),
+        })
+
+    table = pd.DataFrame(rows)
+    if table.empty:
+        return {"table": table, "summary": None}
+
+    total_premiums = float(table["prime"].sum())
+    total_indemnities = float(table["indemnites"].sum())
+    summary = {
+        "n_years": len(table),
+        "total_premiums": total_premiums,
+        "total_indemnities": total_indemnities,
+        # Ratio sinistres / primes (S/P) : < 100 % => le produit est rentable pour l'assureur
+        "loss_ratio": total_indemnities / total_premiums if total_premiums > 0 else float("nan"),
+        "share_favorable": float(table["favorable"].mean()),
+        "cumulative_client_gain": float(table["gain_client"].sum()),
+    }
+    return {"table": table, "summary": summary}
