@@ -56,7 +56,7 @@ Le logiciel répond aux exigences des trois départements de la compagnie :
 
 Le projet met également l'accent sur les critères de valorisation du barème :
 - **Digitalisation & Responsive Web/Mobile** : interface web développée avec **Streamlit** et visualisations **Plotly**, utilisable depuis un ordinateur ou un téléphone.
-- **Données Météorologiques en Temps Réel** : précipitations journalières téléchargées au moment du calcul depuis l'API Open-Meteo (réanalyses ERA5, point de grille le plus proche de la ville), sans clé d'API, puis **corrigées sur la station au sol la plus proche** (méthode des quantiles, 28 villes calées sur les relevés NCEI), ce qui supprime le surcoût d'environ 13 % de la réanalyse.
+- **Données Météorologiques en Temps Réel** : précipitations journalières téléchargées au moment du calcul depuis l'API Open-Meteo (réanalyses ERA5, point de grille le plus proche de la ville), sans clé d'API, puis **corrigées sur la station au sol la plus proche** (méthode des quantiles, 25 villes calées sur les relevés NCEI, correction activée par défaut dans les 14 où elle améliore le tarif), ce qui supprime l'essentiel du surcoût d'environ 13 % de la réanalyse.
 
 ---
 
@@ -115,7 +115,7 @@ Pour une année passée $a$, la prime $P_a$ est calculée **a priori**, comme au
 ├── tests/                 # Tests unitaires automatisés (Pytest, fonctionnent hors ligne)
 ├── data/
 │   ├── nice_1998_rain.csv # Pluie réelle de Nice en 1998 (test de non-régression hors ligne)
-│   └── calibration_stations.json # Tables de correction des 28 villes calées sur une station
+│   └── calibration_stations.json # Tables de correction des 25 villes calées sur une station
 ├── docs/
 │   ├── USER_GUIDE.md      # Manuel d'utilisation complet du logiciel
 │   └── USER_GUIDE.pdf     # Version PDF du manuel (envoi par mail)
@@ -178,13 +178,13 @@ python -m pytest tests/
 
 Les montants de l'exemple du sujet (résultat non assuré de 90 000 €, prime de 3 000 €, pertes évitées de 5 000 €) sont **illustratifs**. Avec la météo réelle de Nice et les paramètres ci-dessous, le logiciel obtient :
 
-- **Paramètres client** : Nice, $\overline{pl} = 10\text{ mm}$, $CA = 1\,000\text{ €/j}$, $Cf = 400\text{ €/j}$ (seuil de perte $pl^* = 6\text{ mm/j}$) ; prime calculée sur 1983-1997, $\beta = 0{,}30$, frais 15 %, pluie corrigée sur la station Nice-Côte d'Azur.
-- **Prime calculée a priori ($P_{1998}$)** : $12\,472\text{ €}$.
-- **Résultat non assuré ($R_{nass}$)** : $189\,491\text{ €}$ ; **résultat garanti brut ($R_{ass}$)** : $197\,102\text{ €}$.
-- **Pertes évitées grâce à l'assurance** : $7\,611\text{ €}$.
-- **Résultat net assuré ($R_{ass} - P_{1998}$)** : $184\,631\text{ €}$.
+- **Paramètres client** : Nice, $\overline{pl} = 10\text{ mm}$, $CA = 1\,000\text{ €/j}$, $Cf = 400\text{ €/j}$ (seuil de perte $pl^* = 6\text{ mm/j}$) ; prime calculée sur 1983-1997, $\beta = 0{,}30$, frais 15 %, pluie corrigée sur la station de Nice-aéroport.
+- **Prime calculée a priori ($P_{1998}$)** : $12\,746\text{ €}$.
+- **Résultat non assuré ($R_{nass}$)** : $188\,902\text{ €}$ ; **résultat garanti brut ($R_{ass}$)** : $196\,610\text{ €}$.
+- **Pertes évitées grâce à l'assurance** : $7\,708\text{ €}$.
+- **Résultat net assuré ($R_{ass} - P_{1998}$)** : $183\,864\text{ €}$.
 
-**Conclusion rétrospective** : en 1998, année moins pluvieuse que la moyenne des quinze précédentes, s'assurer n'aurait **pas** été favorable au commerçant (−4 861 €). Sur 2001-2025, le ratio sinistres / primes du produit est de 79 % et l'assurance a été favorable au client un peu plus d'une année sur trois : la prime est une moyenne, trop chère les années sèches et avantageuse les années pluvieuses.
+**Conclusion rétrospective** : en 1998, année moins pluvieuse que la moyenne des quinze précédentes, s'assurer n'aurait **pas** été favorable au commerçant (−5 038 €). Sur 2001-2025, le ratio sinistres / primes du produit est de 79 % et l'assurance a été favorable au client un peu plus d'une année sur trois : la prime est une moyenne, trop chère les années sèches et avantageuse les années pluvieuses.
 
 ---
 
