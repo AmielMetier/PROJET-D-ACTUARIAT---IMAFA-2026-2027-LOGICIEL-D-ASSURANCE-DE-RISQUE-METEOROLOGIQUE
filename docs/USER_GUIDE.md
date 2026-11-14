@@ -17,19 +17,30 @@ Il intègre 3 volets fondamentaux :
 
 ---
 
-### 2. Installation & Démarrage
+### 2. Accès à l'application
 
-#### Prérequis
+#### En ligne (recommandé)
+L'application est accessible sans installation, sur ordinateur comme sur smartphone ou tablette :
+
+**[https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/](https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/)**
+
+<img src="../report/figures/qr_application.png" alt="QR code vers l'application en ligne" width="160">
+
+Scannez le QR code avec l'appareil photo d'un smartphone pour ouvrir l'application. Elle est hébergée gratuitement sur Streamlit Community Cloud : après quelques jours sans visite, elle se met en veille ; cliquez alors sur « Yes, get this app back up! » et patientez environ une minute.
+
+#### En local (installation)
+
+##### Prérequis
 - Python 3.11 (versions des bibliothèques figées dans `requirements.txt`)
 - Connexion Internet (pour la récupération temps réel des séries météo)
 
-#### Installation des dépendances
+##### Installation des dépendances
 Dans un terminal à la racine du projet :
 ```bash
 pip install -r requirements.txt
 ```
 
-#### Lancement de l'Application Web
+##### Lancement de l'Application Web
 ```bash
 streamlit run app.py
 ```
