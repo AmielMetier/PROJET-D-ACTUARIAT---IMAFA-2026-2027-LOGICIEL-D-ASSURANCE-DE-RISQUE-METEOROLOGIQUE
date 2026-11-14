@@ -56,7 +56,7 @@ Le logiciel répond aux exigences des trois départements de la compagnie :
 
 Le projet met également l'accent sur les critères de valorisation du barème :
 - **Digitalisation & Responsive Web/Mobile** : interface web développée avec **Streamlit** et visualisations **Plotly**, utilisable depuis un ordinateur ou un téléphone.
-- **Données Météorologiques en Temps Réel** : précipitations journalières téléchargées au moment du calcul depuis l'API Open-Meteo (réanalyses ERA5, point de grille le plus proche de la ville), sans clé d'API.
+- **Données Météorologiques en Temps Réel** : précipitations journalières téléchargées au moment du calcul depuis l'API Open-Meteo (réanalyses ERA5, point de grille le plus proche de la ville), sans clé d'API, puis **corrigées sur la station au sol la plus proche** (méthode des quantiles, 25 villes calées sur les relevés NCEI, correction activée par défaut dans les 14 où elle améliore le tarif), ce qui supprime l'essentiel du surcoût d'environ 13 % de la réanalyse.
 
 ---
 
@@ -85,7 +85,9 @@ L'indemnité annuelle $I = \sum_{t=1}^{365} I_t$ est rejouée sur les $N$ année
 $$P_{pure} = \mathbb{E}[I]$$
 La prime commerciale annuelle applique le **principe de l'écart-type** (le chargement de sécurité croît avec la volatilité climatique) puis les frais de gestion et la marge :
 $$P = \frac{\mathbb{E}[I] + \beta \cdot \sigma(I)}{1 - \alpha}$$
-*(où $\beta$ est le coefficient de chargement de sécurité, 0,30 par défaut, et $\alpha$ le taux de frais de gestion).* La VaR 95 % des indemnités annuelles est également affichée.
+*(où $\beta$ est le coefficient de chargement de sécurité, 0,30 par défaut, et $\alpha$ le taux de frais de gestion).*
+
+Le choix $\beta = 0{,}30$ est justifié par un backtest sur 2001-2025 : sans chargement, le produit aurait perdu de l'argent à Nice, Brest et Strasbourg ; avec 0,30, il est rentable à Nice et Strasbourg pour un chargement de 6 à 10 % de la prime pure. La VaR 95 % des indemnités est affichée à titre indicatif : estimée sur 15 années, elle est peu fiable et n'entre pas dans la prime. Détails dans la section 4 du [guide](docs/USER_GUIDE.md).
 
 ### 5. Analyse rétrospective
 Pour une année passée $a$, la prime $P_a$ est calculée **a priori**, comme au 1er janvier de $a$, avec les seules années antérieures. Elle est ensuite comparée aux résultats réellement observés pendant $a$ : s'assurer a été favorable si les indemnités reçues dépassent $P_a$.
@@ -101,6 +103,8 @@ Pour une année passée $a$, la prime $P_a$ est calculée **a priori**, comme au
 │   ├── simulation.py      # Modèle client, CA journalier, résultat et calcul des indemnités
 │   ├── pricing.py         # Périodes de couverture de 365 jours et tarification (E[I], σ, VaR, chargements)
 │   ├── weather_api.py     # Géocodage et précipitations Open-Meteo (nouvelles tentatives, erreurs lisibles)
+│   ├── bias_correction.py # Correction de la pluie par quantiles, calée sur les stations au sol
+│   ├── cities.py          # Villes du menu déroulant
 │   ├── pdf_generator.py   # Devis au format PDF (ReportLab)
 │   ├── backtesting.py     # Analyse rétrospective sur une ou plusieurs années
 │   ├── visualisations.py  # Graphiques interactifs (Plotly)
@@ -110,12 +114,19 @@ Pour une année passée $a$, la prime $P_a$ est calculée **a priori**, comme au
 │   └── 01_tarification_et_analyse_retrospective.ipynb  # Démonstration et validation pas-à-pas
 ├── tests/                 # Tests unitaires automatisés (Pytest, fonctionnent hors ligne)
 ├── data/
-│   └── nice_1998_rain.csv # Précipitations journalières de Nice en 1998 (référence)
+│   ├── nice_1998_rain.csv # Pluie réelle de Nice en 1998 (test de non-régression hors ligne)
+│   └── calibration_stations.json # Tables de correction des 25 villes calées sur une station
 ├── docs/
-│   └── USER_GUIDE.md      # Manuel d'utilisation complet du logiciel
-├── report/figures/        # Figures du rapport
+│   ├── USER_GUIDE.md      # Manuel d'utilisation complet du logiciel
+│   └── USER_GUIDE.pdf     # Version PDF du manuel (envoi par mail)
+├── scripts/
+│   ├── generer_guide_pdf.py     # Génère docs/USER_GUIDE.pdf
+│   ├── comparaison_station.py   # Compare Open-Meteo à la station Nice-aéroport (NCEI)
+│   └── calibrer_correction.py   # Calcule les tables de correction des villes du menu
+├── report/figures/        # Captures d'écran, QR code et figures
 ├── PROJET-ACTUARIAT- LOGICIEL D ASSURANCE DE RISQUE METEOROLOGIQUE.pdf # Sujet officiel
-├── requirements.txt       # Dépendances Python (versions figées)
+├── requirements.txt       # Dépendances de l'application (versions figées)
+├── requirements-dev.txt   # Outils en plus : notebook, figures, guide PDF
 └── README.md
 ```
 
@@ -150,7 +161,9 @@ L'application s'ouvre à l'adresse `http://localhost:8501` (la version en ligne,
 - le guide d'utilisation intégré.
 
 ### Lancement des Notebooks
+Le notebook et les scripts d'analyse demandent quelques outils de plus (JupyterLab, Matplotlib) :
 ```bash
+pip install -r requirements-dev.txt
 jupyter lab notebooks/01_tarification_et_analyse_retrospective.ipynb
 ```
 
@@ -165,13 +178,13 @@ python -m pytest tests/
 
 Les montants de l'exemple du sujet (résultat non assuré de 90 000 €, prime de 3 000 €, pertes évitées de 5 000 €) sont **illustratifs**. Avec la météo réelle de Nice et les paramètres ci-dessous, le logiciel obtient :
 
-- **Paramètres client** : Nice, $\overline{pl} = 10\text{ mm}$, $CA = 1\,000\text{ €/j}$, $Cf = 400\text{ €/j}$ (seuil de perte $pl^* = 6\text{ mm/j}$) ; prime calculée sur 1983-1997, $\beta = 0{,}30$, frais 15 %.
-- **Prime calculée a priori ($P_{1998}$)** : $14\,593\text{ €}$.
-- **Résultat non assuré ($R_{nass}$)** : $178\,010\text{ €}$ ; **résultat garanti brut ($R_{ass}$)** : $186\,540\text{ €}$.
-- **Pertes évitées grâce à l'assurance** : $8\,530\text{ €}$.
-- **Résultat net assuré ($R_{ass} - P_{1998}$)** : $171\,947\text{ €}$.
+- **Paramètres client** : Nice, $\overline{pl} = 10\text{ mm}$, $CA = 1\,000\text{ €/j}$, $Cf = 400\text{ €/j}$ (seuil de perte $pl^* = 6\text{ mm/j}$) ; prime calculée sur 1983-1997, $\beta = 0{,}30$, frais 15 %, pluie corrigée sur la station de Nice-aéroport.
+- **Prime calculée a priori ($P_{1998}$)** : $12\,746\text{ €}$.
+- **Résultat non assuré ($R_{nass}$)** : $188\,902\text{ €}$ ; **résultat garanti brut ($R_{ass}$)** : $196\,610\text{ €}$.
+- **Pertes évitées grâce à l'assurance** : $7\,708\text{ €}$.
+- **Résultat net assuré ($R_{ass} - P_{1998}$)** : $183\,864\text{ €}$.
 
-**Conclusion rétrospective** : en 1998, année moins pluvieuse que la moyenne des quinze précédentes, s'assurer n'aurait **pas** été favorable au commerçant (−6 063 €). Sur 2001-2025, le ratio sinistres / primes du produit est de 79 % et l'assurance a été favorable au client une année sur quatre environ : la prime est une moyenne, trop chère les années sèches et avantageuse les années pluvieuses.
+**Conclusion rétrospective** : en 1998, année moins pluvieuse que la moyenne des quinze précédentes, s'assurer n'aurait **pas** été favorable au commerçant (−5 038 €). Sur 2001-2025, le ratio sinistres / primes du produit est de 79 % et l'assurance a été favorable au client un peu plus d'une année sur trois : la prime est une moyenne, trop chère les années sèches et avantageuse les années pluvieuses.
 
 ---
 

@@ -82,6 +82,7 @@ def generate_devis_pdf(
     client_name: str = "",
     company_name: str = "",
     issued: Optional[date] = None,
+    correction_label: str = "",
 ) -> bytes:
     """
     Génère un devis d'assurance météorologique au format PDF.
@@ -159,6 +160,8 @@ def generate_devis_pdf(
         if history_label:
             base_text += f", sur les périodes de couverture équivalentes du {escape(history_label)}"
         elements.append(Spacer(1, 5))
+        if correction_label:
+            base_text += ". " + escape(correction_label.rstrip("."))
         elements.append(Paragraph(base_text + ".", normal))
 
     # 3. Tarif
