@@ -137,7 +137,7 @@ def generate_devis_pdf(
     client_data = [
         ["Nom du client :", client_name or "—", "Raison sociale :", company_name or "—"],
         ["Ville d'activité :", profile.city, "Date de prise d'effet :", f"{sub:%d/%m/%Y}"],
-        ["CA maximum journalier (CA) :", fmt_eur(profile.ca_max), "Coûts fixes journaliers (Cf) :", fmt_eur(profile.cf)],
+        ["CA max. journalier (CA) :", fmt_eur(profile.ca_max), "Coûts fixes journaliers (Cf) :", fmt_eur(profile.cf)],
         ["Pluie pivot journalière :", f"{fmt_num(profile.pl_pivot, 1)} mm", "Fin de couverture :", f"{end:%d/%m/%Y} (365 jours)"],
     ]
     elements.append(_boxed_table(client_data, [130, 125, 140, 120]))

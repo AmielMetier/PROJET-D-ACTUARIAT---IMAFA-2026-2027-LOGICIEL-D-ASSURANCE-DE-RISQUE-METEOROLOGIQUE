@@ -18,7 +18,7 @@ from src.formatting import fmt_eur, fmt_num, fmt_pct
 st.set_page_config(
     page_title="Assurance Risque Météorologique | IMAFA",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto",  # ouverte sur ordinateur, repliée sur téléphone
 )
 
 # Première année disponible dans les archives Open-Meteo

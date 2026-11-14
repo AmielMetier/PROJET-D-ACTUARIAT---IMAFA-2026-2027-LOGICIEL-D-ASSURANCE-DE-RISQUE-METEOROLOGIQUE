@@ -51,6 +51,8 @@ L'interface s'ouvre automatiquement dans votre navigateur par défaut à l'adres
 ### 3. Guide Pas à Pas
 
 #### Étape 1 : Profil client et paramètres (barre latérale)
+> Sur téléphone, la barre latérale est repliée au démarrage : touchez le symbole » en haut à gauche pour l'ouvrir, puis touchez à côté pour la refermer.
+
 Dans la barre latérale gauche, renseignez les paramètres du commerçant :
 - **Ville du commerce** : choisissez-la dans le menu déroulant (44 grandes villes françaises, triées par ordre alphabétique ; tapez les premières lettres pour filtrer la liste). Si la ville n'y figure pas, tapez son nom en entier puis validez avec Entrée : n'importe quelle ville reconnue par le service météo est acceptée (ex. *Lorient*).
   - La recherche se fait d'abord **en France**, puis dans le monde entier si rien n'est trouvé ; en cas d'homonymes, la commune la plus peuplée est retenue.
