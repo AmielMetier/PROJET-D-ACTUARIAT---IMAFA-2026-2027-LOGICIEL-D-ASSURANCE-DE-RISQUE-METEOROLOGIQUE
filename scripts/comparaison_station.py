@@ -27,6 +27,7 @@ from src.simulation import ClientProfile, simulate_year              # noqa: E40
 from src.weather_api import get_coordinates, fetch_historical_precipitation  # noqa: E402
 from src.pricing import split_into_coverage_periods, price_contract_historical  # noqa: E402
 from src.formatting import fmt_eur, fmt_num                           # noqa: E402
+from src.bias_correction import find_calibration, correct_dataframe  # noqa: E402
 
 CITY = "Nice"
 STATION_ID, STATION_LABEL = "FRE00104120", "Nice (aéroport)"
@@ -77,22 +78,29 @@ def main():
     grid = fetch_historical_precipitation(lat, lon, f"{FIRST_YEAR}-01-01", f"{LAST_YEAR}-12-31")
     station = fetch_station()
 
+    calibration = find_calibration(CITY, lat, lon)
+    corrected = correct_dataframe(grid, calibration)
+
     p_grid = split_into_coverage_periods(grid, 1, 1, FIRST_YEAR, LAST_YEAR)
+    p_corr = split_into_coverage_periods(corrected, 1, 1, FIRST_YEAR, LAST_YEAR)
     p_station = split_into_coverage_periods(station, 1, 1, FIRST_YEAR, LAST_YEAR)
     common = sorted(set(p_grid) & set(p_station))
     p_grid = {y: p_grid[y] for y in common}
+    p_corr = {y: p_corr[y] for y in common}
     p_station = {y: p_station[y] for y in common}
     missing = sum(p["missing_days"] for p in p_station.values())
 
-    g, s = yearly_stats(p_grid), yearly_stats(p_station)
+    g, c, s = yearly_stats(p_grid), yearly_stats(p_corr), yearly_stats(p_station)
     price_g = price_contract_historical({y: p["precipitation"] for y, p in p_grid.items()}, PROFILE)
+    price_c = price_contract_historical({y: p["precipitation"] for y, p in p_corr.items()}, PROFILE)
     price_s = price_contract_historical({y: p["precipitation"] for y, p in p_station.items()}, PROFILE)
 
     print(f"Open-Meteo : point de grille de {label} ({lat:.3f} ; {lon:.3f})")
     print(f"Station    : {STATION_ID} {STATION_LABEL} — {len(common)} années complètes "
           f"({common[0]}-{common[-1]}), {missing} jours manquants comptés à 0 mm")
     print()
-    print(f"{'Moyenne annuelle':38s} {'Open-Meteo':>12s} {'Station':>12s} {'Écart':>8s}")
+    print(f"Correction : {'station ' + calibration['station_id'] if calibration else 'aucune calibration trouvée'}")
+    print(f"{'Moyenne annuelle':38s} {'Open-Meteo':>12s} {'Corrigée':>12s} {'Station':>12s} {'Écart brut':>11s} {'Écart corr.':>11s}")
     lines = [
         ("Cumul de pluie (mm)", "cumul_mm", 0),
         ("Jours avec pluie (> 0 mm)", "jours_pluie", 0),
@@ -101,16 +109,19 @@ def main():
         ("Jours ≥ 10 mm (activité arrêtée)", "jours_pivot", 1),
         ("Pluie journalière maximale (mm)", "max_mm", 1),
     ]
+    def row(name, a, b, ref, fmt):
+        print(f"{name:38s} {fmt(a):>12s} {fmt(b):>12s} {fmt(ref):>12s} {(a / ref - 1):>+11.0%} {(b / ref - 1):>+11.0%}")
     for name, col, dec in lines:
-        a, b = g[col].mean(), s[col].mean()
-        print(f"{name:38s} {fmt_num(a, dec):>12s} {fmt_num(b, dec):>12s} {(a / b - 1):>+8.0%}")
-    print(f"{'Prime pure E[I]':38s} {fmt_eur(price_g['pure_premium'], 0):>12s} {fmt_eur(price_s['pure_premium'], 0):>12s} "
-          f"{(price_g['pure_premium'] / price_s['pure_premium'] - 1):>+8.0%}")
-    print(f"{'Prime commerciale':38s} {fmt_eur(price_g['commercial_premium'], 0):>12s} "
-          f"{fmt_eur(price_s['commercial_premium'], 0):>12s} "
-          f"{(price_g['commercial_premium'] / price_s['commercial_premium'] - 1):>+8.0%}")
-    print(f"{'Résultat annuel non assuré':38s} {fmt_eur(g['r_nass'].mean(), 0):>12s} {fmt_eur(s['r_nass'].mean(), 0):>12s} "
-          f"{(g['r_nass'].mean() / s['r_nass'].mean() - 1):>+8.0%}")
+        row(name, g[col].mean(), c[col].mean(), s[col].mean(), lambda v, d=dec: fmt_num(v, d))
+    money = lambda v: fmt_eur(v, 0)
+    row("Prime pure E[I]", price_g["pure_premium"], price_c["pure_premium"], price_s["pure_premium"], money)
+    row("Prime commerciale", price_g["commercial_premium"], price_c["commercial_premium"], price_s["commercial_premium"], money)
+    row("Résultat annuel non assuré", g["r_nass"].mean(), c["r_nass"].mean(), s["r_nass"].mean(), money)
+    if calibration:
+        v = calibration["validation"]
+        print(f"\nValidation hors échantillon (correction calée sur {v['calibration_period']}, testée sur {v['period']}) : "
+              f"indemnités brut {money(v['indemnity_model'])}, corrigé {money(v['indemnity_corrected'])}, "
+              f"station {money(v['indemnity_station'])}")
     corr = np.corrcoef(g["indemnites"], s["indemnites"])[0, 1]
     print(f"\nCorrélation des indemnités annuelles entre les deux sources : {fmt_num(corr, 2)}")
 
