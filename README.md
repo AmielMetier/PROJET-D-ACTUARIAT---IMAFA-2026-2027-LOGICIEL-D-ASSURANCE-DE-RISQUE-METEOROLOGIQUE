@@ -17,13 +17,13 @@ Enseignant : **Marius AKRE**
 Dans le cadre d'une création d'offre d'assurance paramétrique, ce projet a pour objectif de concevoir un logiciel complet de couverture contre les aléas météorologiques (notamment le risque de pluie) pour des commerçants dont l'activité dépend directement de la météo.
 
 Le logiciel répond aux exigences des trois départements de la compagnie :
-1. **Département Tarification (Pricing)** : calculer la prime d'assurance annuelle garantissant un résultat d'exploitation positif ($R \ge 0$) pour chacun des 365 jours de l'année.
-2. **Département Commercial (Devis)** : générer et imprimer un devis contractuel officiel au format **PDF** avec les caractéristiques client et les garanties.
-3. **Département R&D (Analyse Rétrospective)** : comparer sur n'importe quelle année passée $a$ le résultat non assuré ($R_{nass}$), le résultat garanti ($R_{ass}$) et la prime payée ($P_a$) à l'aide de représentations graphiques interactives.
+1. **Département Tarification (Pricing)** : calculer la prime d'assurance annuelle garantissant un résultat d'exploitation positif ($R \ge 0$) pour chacun des 365 jours suivant la date de souscription.
+2. **Département Commercial (Devis)** : générer et imprimer un devis contractuel au format **PDF** (bloc assureur, identité du client, garantie, détail de la prime, zone de signature).
+3. **Département R&D (Analyse Rétrospective)** : comparer sur n'importe quelle année passée $a$ le résultat non assuré ($R_{nass}$), le résultat garanti ($R_{ass}$) et la prime calculée a priori ($P_a$), puis rejouer le contrat sur plusieurs années (ratio sinistres / primes, part des années favorables au client), avec graphiques interactifs.
 
 Le projet met également l'accent sur les critères de valorisation du barème :
-- **Digitalisation & Responsive Web/Mobile** : interface web moderne développée avec **Streamlit** et visualisations **Plotly**.
-- **Données Météorologiques en Temps Réel** : interrogation en direct de l'API Open-Meteo (historiques et prévisions mondiales/françaises) avec cache local de résilience.
+- **Digitalisation & Responsive Web/Mobile** : interface web développée avec **Streamlit** et visualisations **Plotly**, utilisable depuis un ordinateur ou un téléphone.
+- **Données Météorologiques en Temps Réel** : précipitations journalières téléchargées au moment du calcul depuis l'API Open-Meteo (réanalyses ERA5, point de grille le plus proche de la ville), sans clé d'API.
 
 ---
 
@@ -48,11 +48,14 @@ Sur l'ensemble des 365 jours, le résultat non assuré et le résultat garanti b
 $$R_{nass} = \sum_{t=1}^{365} R_t^{pl}, \qquad R_{ass} = \sum_{t=1}^{365} (R_t^{pl} + I_t) = R_{nass} + \sum_{t=1}^{365} I_t$$
 
 ### 4. Tarification prospective (Pricing)
-La **prime pure technique** $\mathbb{E}[I]$ correspond à l'espérance mathématique des indemnités annuelles estimée sur l'historique climatique :
-$$P_{pure} = \mathbb{E}\left[\sum_{t=1}^{365} I_t\right]$$
-La prime commerciale annuelle $P$ intègre un chargement de sécurité actuariel lié à la volatilité climatique et des frais de gestion/marge commerciale :
-$$P = \frac{P_{pure} + \beta \cdot P_{pure}}{1 - \alpha}$$
-*(où $\beta$ est le taux de chargement de sécurité et $\alpha$ le taux de frais de gestion).*
+L'indemnité annuelle $I = \sum_{t=1}^{365} I_t$ est rejouée sur les $N$ années d'historique, chacune découpée en périodes de 365 jours commençant au jour de la souscription. La **prime pure technique** est son espérance, estimée par la moyenne historique :
+$$P_{pure} = \mathbb{E}[I]$$
+La prime commerciale annuelle applique le **principe de l'écart-type** (le chargement de sécurité croît avec la volatilité climatique) puis les frais de gestion et la marge :
+$$P = \frac{\mathbb{E}[I] + \beta \cdot \sigma(I)}{1 - \alpha}$$
+*(où $\beta$ est le coefficient de chargement de sécurité, 0,30 par défaut, et $\alpha$ le taux de frais de gestion).* La VaR 95 % des indemnités annuelles est également affichée.
+
+### 5. Analyse rétrospective
+Pour une année passée $a$, la prime $P_a$ est calculée **a priori**, comme au 1er janvier de $a$, avec les seules années antérieures. Elle est ensuite comparée aux résultats réellement observés pendant $a$ : s'assurer a été favorable si les indemnités reçues dépassent $P_a$.
 
 ---
 
@@ -63,23 +66,23 @@ $$P = \frac{P_{pure} + \beta \cdot P_{pure}}{1 - \alpha}$$
 ├── src/
 │   ├── __init__.py
 │   ├── simulation.py      # Modèle client, CA journalier, résultat et calcul des indemnités
-│   ├── pricing.py         # Tarification actuarielle (prime pure, écart-type, chargements)
-│   ├── weather_api.py     # API météo Open-Meteo temps réel & archives avec cache local
-│   ├── pdf_generator.py   # Générateur de devis officiel au format PDF (ReportLab)
-│   ├── backtesting.py     # Analyse rétrospective R_nass vs R_ass et P
-│   └── visualisations.py  # Graphiques interactifs (Plotly)
+│   ├── pricing.py         # Périodes de couverture de 365 jours et tarification (E[I], σ, VaR, chargements)
+│   ├── weather_api.py     # Géocodage et précipitations Open-Meteo (nouvelles tentatives, erreurs lisibles)
+│   ├── pdf_generator.py   # Devis au format PDF (ReportLab)
+│   ├── backtesting.py     # Analyse rétrospective sur une ou plusieurs années
+│   ├── visualisations.py  # Graphiques interactifs (Plotly)
+│   └── formatting.py      # Montants au format français
 ├── app.py                 # Interface Web & Mobile complète (Streamlit)
 ├── notebooks/
 │   └── 01_tarification_et_analyse_retrospective.ipynb  # Démonstration et validation pas-à-pas
-├── tests/
-│   ├── __init__.py
-│   └── test_pricing.py    # Tests unitaires automatisés (Pytest)
+├── tests/                 # Tests unitaires automatisés (Pytest, fonctionnent hors ligne)
 ├── data/
-│   └── nice_1998_rain.csv # Données pluviométriques réelles de référence (Nice 1998)
+│   └── nice_1998_rain.csv # Précipitations journalières de Nice en 1998 (référence)
 ├── docs/
 │   └── USER_GUIDE.md      # Manuel d'utilisation complet du logiciel
+├── report/figures/        # Figures du rapport
 ├── PROJET-ACTUARIAT- LOGICIEL D ASSURANCE DE RISQUE METEOROLOGIQUE.pdf # Sujet officiel
-├── requirements.txt       # Dépendances Python
+├── requirements.txt       # Dépendances Python (versions figées)
 └── README.md
 ```
 
@@ -88,7 +91,7 @@ $$P = \frac{P_{pure} + \beta \cdot P_{pure}}{1 - \alpha}$$
 ## Installation et démarrage rapide
 
 ### Prérequis
-Python 3.10 ou supérieur.
+Python 3.11 et une connexion Internet (données météo récupérées au moment du calcul).
 
 ```bash
 # 1. Cloner le dépôt
@@ -108,10 +111,10 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 L'application s'ouvre à l'adresse `http://localhost:8501`. Elle propose :
-- La configuration du commerçant (CA, Coûts fixes, Pluie pivot, Ville).
-- La tarification prospective avec téléchargement du **Devis officiel en PDF**.
-- L'analyse rétrospective interactive avec courbes temporelles et graphiques de comparaison.
-- Le guide d'utilisation intégré.
+- dans la barre latérale, le profil du commerçant (ville, CA, coûts fixes, pluie pivot, date de souscription) et les paramètres actuariels (historique, β, frais) ;
+- la tarification prospective avec téléchargement du **devis en PDF** ;
+- l'analyse rétrospective sur une année ou sur une plage d'années, avec graphiques ;
+- le guide d'utilisation intégré.
 
 ### Lancement des Notebooks
 ```bash
@@ -120,21 +123,22 @@ jupyter lab notebooks/01_tarification_et_analyse_retrospective.ipynb
 
 ### Exécution des Tests Unitaires
 ```bash
-pytest tests/
+python -m pytest tests/
 ```
 
 ---
 
 ## Exemple d'analyse rétrospective (Nice, 1998)
 
-Conformément à l'exemple chiffré du sujet :
-- **Paramètres client** : Ville de Nice, $\overline{pl} = 10\text{ mm}$, $CA = 1\,000\text{ €/j}$, $Cf = 400\text{ €/j}$ (seuil de perte $pl^* = 6\text{ mm/j}$).
-- **Résultat non assuré ($R_{nass}^{1998}$)** : $\approx 90\,000\text{ €}$.
-- **Prime payée a priori ($P^{1998}$)** : $3\,000\text{ €}$.
-- **Pertes réelles évitées grâce à l'assurance** : $\approx 5\,000\text{ €}$.
-- **Résultat net assuré ($R_{ass} - P$)** : $\approx 92\,000\text{ €}$.
+Les montants de l'exemple du sujet (résultat non assuré de 90 000 €, prime de 3 000 €, pertes évitées de 5 000 €) sont **illustratifs**. Avec la météo réelle de Nice et les paramètres ci-dessous, le logiciel obtient :
 
-**Conclusion rétrospective** : S'assurer en 1998 a été nettement favorable au commerçant, la prime payée a priori ($3\,000\text{ €}$) étant inférieure aux pertes réelles générées par les intempéries ($5\,000\text{ €}$).
+- **Paramètres client** : Nice, $\overline{pl} = 10\text{ mm}$, $CA = 1\,000\text{ €/j}$, $Cf = 400\text{ €/j}$ (seuil de perte $pl^* = 6\text{ mm/j}$) ; prime calculée sur 1983-1997, $\beta = 0{,}30$, frais 15 %.
+- **Prime calculée a priori ($P_{1998}$)** : $14\,593\text{ €}$.
+- **Résultat non assuré ($R_{nass}$)** : $178\,010\text{ €}$ ; **résultat garanti brut ($R_{ass}$)** : $186\,540\text{ €}$.
+- **Pertes évitées grâce à l'assurance** : $8\,530\text{ €}$.
+- **Résultat net assuré ($R_{ass} - P_{1998}$)** : $171\,947\text{ €}$.
+
+**Conclusion rétrospective** : en 1998, année moins pluvieuse que la moyenne des quinze précédentes, s'assurer n'aurait **pas** été favorable au commerçant (−6 063 €). Sur 2001-2025, le ratio sinistres / primes du produit est de 79 % et l'assurance a été favorable au client une année sur quatre environ : la prime est une moyenne, trop chère les années sèches et avantageuse les années pluvieuses.
 
 ---
 
@@ -147,6 +151,8 @@ Conformément à l'exemple chiffré du sujet :
 ---
 
 ## Sources et références
-- Données historiques & prévisions en temps réel : [Open-Meteo API](https://open-meteo.com)
+- Données historiques en temps réel : [Open-Meteo API](https://open-meteo.com) (réanalyses ERA5 / ERA5-Land)
 - Climatologie France : [Infoclimat](https://www.infoclimat.fr)
 - National Centers for Environmental Information : [NOAA / NCEI](https://www.ncei.noaa.gov)
+
+Pour la documentation complète, les formules et les limites de la source météo, consultez le [Manuel d'Utilisation](docs/USER_GUIDE.md).

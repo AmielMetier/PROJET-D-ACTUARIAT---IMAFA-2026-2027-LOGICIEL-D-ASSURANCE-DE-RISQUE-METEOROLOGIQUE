@@ -5,8 +5,9 @@ Fournit des graphiques pour l'analyse rétrospective et l'analyse de risque.
 
 from typing import Dict, Any
 import plotly.graph_objects as go
-import plotly.express as px
 import pandas as pd
+
+from .formatting import fmt_eur
 
 
 def plot_retrospective_comparison(analysis: Dict[str, Any], year: int) -> go.Figure:
@@ -32,7 +33,7 @@ def plot_retrospective_comparison(analysis: Dict[str, Any], year: int) -> go.Fig
             x=categories,
             y=values,
             marker_color=colors,
-            text=[f"{v:,.0f} €" for v in values],
+            text=[fmt_eur(v, 0) for v in values],
             textposition="auto"
         )
     ])
@@ -40,6 +41,7 @@ def plot_retrospective_comparison(analysis: Dict[str, Any], year: int) -> go.Fig
         title=f"Bilan Rétrospectif de l'Assurance Météorologique (Année {year})",
         yaxis_title="Montant en Euros (€)",
         template="plotly_white",
+        separators=", ",  # virgule décimale, espace pour les milliers
         height=450
     )
     return fig
@@ -72,7 +74,45 @@ def plot_cumulative_results(df_details: pd.DataFrame, year: int) -> go.Figure:
         xaxis_title="Date",
         yaxis_title="Résultat Cumulé (€)",
         template="plotly_white",
+        separators=", ",  # virgule décimale, espace pour les milliers
         hovermode="x unified",
         height=450
+    )
+    return fig
+
+
+def plot_multi_year_backtest(table: pd.DataFrame) -> go.Figure:
+    """
+    Primes calculées a priori contre indemnités réellement versées, année par année.
+    Les barres vertes marquent les années où s'assurer aurait été favorable au client.
+    """
+    colors = ["#00CC96" if fav else "#B0BEC5" for fav in table["favorable"]]
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=table["annee"],
+        y=table["indemnites"],
+        name="Indemnités versées (a posteriori)",
+        marker_color=colors,
+        customdata=[fmt_eur(v, 0) for v in table["indemnites"]],
+        hovertemplate="%{customdata}<extra>Indemnités</extra>",
+    ))
+    fig.add_trace(go.Scatter(
+        x=table["annee"],
+        y=table["prime"],
+        name="Prime calculée a priori",
+        mode="lines+markers",
+        line=dict(color="#EF553B", width=2.5),
+        customdata=[fmt_eur(v, 0) for v in table["prime"]],
+        hovertemplate="%{customdata}<extra>Prime</extra>",
+    ))
+    fig.update_layout(
+        title="Prime a priori et indemnités par année",
+        xaxis_title="Année",
+        yaxis_title="Montant (€)",
+        template="plotly_white",
+        separators=", ",  # virgule décimale, espace pour les milliers
+        hovermode="x unified",
+        height=450,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
     )
     return fig

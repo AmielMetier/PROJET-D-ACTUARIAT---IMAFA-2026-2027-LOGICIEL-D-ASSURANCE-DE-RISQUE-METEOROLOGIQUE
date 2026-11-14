@@ -60,14 +60,65 @@ def test_daily_impact_cases():
 
 def test_example_from_subject():
     """
-    Vérifie la cohérence avec l'exemple chiffré du sujet:
-    R_nass = 90 000 €, R_ass = 95 000 €, P = 3 000 €
-    R_net = 92 000 €
-    Pertes évitées = 5 000 € > P = 3 000 € => favorable.
+    Reproduit l'exemple chiffré du sujet (client niçois, 1998, pivot 10 mm) :
+    R_nass = 90 000 €, R_ass = 95 000 €, P = 3 000 €  =>  R_net = 92 000 €,
+    pertes évitées = 5 000 € > P = 3 000 €  =>  s'assurer aurait été favorable.
+
+    Année construite avec CA = 1 000 €, Cf = 500 € :
+    - 190 jours secs        : résultat 500 € / jour  -> 95 000 €
+    - 165 jours à 5 mm      : f = 0,5, résultat 0 €
+    - 10 jours à 12 mm      : résultat -500 € / jour -> -5 000 € (indemnisés)
     """
-    profile = ClientProfile(ca_max=1000.0, cf=400.0, pl_pivot=10.0, city="Nice", subscription_date="1998-01-01")
-    # Série factice donnant une année
-    s = pd.Series([0.0] * 365)
+    profile = ClientProfile(ca_max=1000.0, cf=500.0, pl_pivot=10.0, city="Nice", subscription_date="1998-01-01")
+    s = pd.Series([0.0] * 190 + [5.0] * 165 + [12.0] * 10)
     analysis = run_retrospective_analysis(s, profile, annual_premium=3000.0)
-    # Test de la relation net = brut - prime
-    assert analysis["r_net"] == analysis["r_ass"] - 3000.0
+
+    assert analysis["r_nass"] == pytest.approx(90_000.0)
+    assert analysis["r_ass"] == pytest.approx(95_000.0)
+    assert analysis["r_net"] == pytest.approx(92_000.0)
+    assert analysis["pertes_evitees"] == pytest.approx(5_000.0)
+    assert analysis["est_favorable"]
+
+    # Avec une prime supérieure aux pertes évitées, l'assurance n'est plus favorable
+    assert not run_retrospective_analysis(s, profile, annual_premium=6000.0)["est_favorable"]
+
+
+def test_premium_paid_upfront_in_cumulative_curve():
+    """La prime est payée en une fois à la souscription : la courbe nette démarre à r_ass(jour 1) - P."""
+    profile = ClientProfile(ca_max=1000.0, cf=400.0, pl_pivot=10.0, city="Nice", subscription_date="1998-01-01")
+    analysis = run_retrospective_analysis(pd.Series([0.0] * 365), profile, annual_premium=3000.0)
+    details = analysis["details_journaliers"]
+    assert details["cum_r_net"].iloc[0] == pytest.approx(600.0 - 3000.0)
+    assert details["cum_r_net"].iloc[-1] == pytest.approx(analysis["r_net"])
+
+
+def test_a_priori_premium_uses_only_given_years():
+    """La prime est la moyenne chargée des indemnités des seules années fournies."""
+    from src.pricing import price_contract_historical
+
+    profile = ClientProfile(ca_max=1000.0, cf=400.0, pl_pivot=10.0, city="Nice", subscription_date="1998-01-01")
+    # 1996 : 10 jours de forte pluie => 10 * 400 = 4000 € ; 1997 : année sèche => 0 €
+    prior = {
+        1996: pd.Series([12.0] * 10 + [0.0] * 355),
+        1997: pd.Series([0.0] * 365),
+    }
+    res = price_contract_historical(prior, profile, safety_beta=0.30, expense_rate=0.15)
+    assert res["pure_premium"] == pytest.approx(2000.0)
+    # Écart-type (ddof=1) de {4000, 0} = 2000 * racine(2)
+    sigma = 2000.0 * 2 ** 0.5
+    assert res["std_indemnity"] == pytest.approx(sigma)
+    assert res["safety_loading"] == pytest.approx(0.30 * sigma)
+    assert res["commercial_premium"] == pytest.approx((2000.0 + 0.30 * sigma) / 0.85)
+
+
+def test_safety_loading_grows_with_risk_variability():
+    """À prime pure égale, un risque plus irrégulier doit coûter plus cher."""
+    from src.pricing import price_contract_historical
+
+    profile = ClientProfile(ca_max=1000.0, cf=400.0, pl_pivot=10.0, city="Nice", subscription_date="1998-01-01")
+    heavy = lambda n: pd.Series([12.0] * n + [0.0] * (365 - n))
+    stable = price_contract_historical({1: heavy(5), 2: heavy(5)}, profile)      # 2000 € chaque année
+    volatile = price_contract_historical({1: heavy(10), 2: heavy(0)}, profile)   # 4000 € puis 0 €
+    assert stable["pure_premium"] == pytest.approx(volatile["pure_premium"])
+    assert stable["safety_loading"] == pytest.approx(0.0)
+    assert volatile["commercial_premium"] > stable["commercial_premium"]

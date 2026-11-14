@@ -4,8 +4,7 @@ Implémente fidèlement les formules du sujet de projet.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any
-import numpy as np
+from typing import Dict
 import pandas as pd
 
 
