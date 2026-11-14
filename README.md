@@ -3,6 +3,39 @@
 Projet d'actuariat — **Polytech Nice Sophia (MAM, parcours IMAFA 2026-2027)**.  
 Enseignant : **Marius AKRE**
 
+## Application en ligne
+
+**[https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/](https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/)**
+
+Utilisable directement depuis un navigateur d'ordinateur ou de téléphone, sans installation. Scannez le QR code avec l'appareil photo d'un smartphone pour l'ouvrir :
+
+<img src="report/figures/qr_application.png" alt="QR code vers l'application en ligne" width="180">
+
+> Hébergée gratuitement sur Streamlit Community Cloud : après quelques jours sans visite, l'application se met en veille et le premier visiteur doit cliquer sur « Yes, get this app back up! » puis patienter environ une minute.
+
+## Aperçu
+
+Captures réalisées avec un client fictif (Camille Exemple, SARL Glacier Exemple), à Nice, avec les paramètres par défaut.
+
+**Tarification et devis** : profil du commerce et paramètres actuariels dans la barre latérale, prime calculée sur la météo réelle.
+
+<img src="report/figures/capture_tarification.png" alt="Onglet Tarification : prime pure, écart-type, VaR 95 %, prime commerciale et champs du devis" width="100%">
+
+<table>
+<tr>
+<td width="62%"><b>Devis PDF</b> téléchargé depuis l'application<br><img src="report/figures/capture_devis.png" alt="Devis PDF : souscripteur, garantie, détail de la prime et zone de signature" width="100%"></td>
+<td width="38%"><b>Sur téléphone</b> (barre latérale repliée)<br><img src="report/figures/capture_mobile.png" alt="Application affichée sur un écran de téléphone" width="100%"></td>
+</tr>
+</table>
+
+**Analyse rétrospective sur une année** : prime calculée a priori au 1er janvier 1998, résultats réels de l'année et conclusion.
+
+<img src="report/figures/capture_retrospective_annee.png" alt="Analyse rétrospective de 1998 : prime a priori, résultats assuré et non assuré, graphiques" width="100%">
+
+**Analyse rétrospective sur plusieurs années** : ratio sinistres / primes et années favorables au client (en vert).
+
+<img src="report/figures/capture_retrospective_plusieurs_annees.png" alt="Analyse sur 2001-2025 : ratio sinistres / primes, part des années favorables, graphique prime contre indemnités" width="100%">
+
 ## Équipe
 - Amiel Metier
 - Tahitoa Senis
@@ -110,7 +143,7 @@ pip install -r requirements.txt
 ```bash
 streamlit run app.py
 ```
-L'application s'ouvre à l'adresse `http://localhost:8501`. Elle propose :
+L'application s'ouvre à l'adresse `http://localhost:8501` (la version en ligne, identique, est sur [ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app](https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/)). Elle propose :
 - dans la barre latérale, le profil du commerçant (ville, CA, coûts fixes, pluie pivot, date de souscription) et les paramètres actuariels (historique, β, frais) ;
 - la tarification prospective avec téléchargement du **devis en PDF** ;
 - l'analyse rétrospective sur une année ou sur une plage d'années, avec graphiques ;

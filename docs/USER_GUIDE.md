@@ -17,19 +17,30 @@ Il intègre 3 volets fondamentaux :
 
 ---
 
-### 2. Installation & Démarrage
+### 2. Accès à l'application
 
-#### Prérequis
+#### En ligne (recommandé)
+L'application est accessible sans installation, sur ordinateur comme sur smartphone ou tablette :
+
+**[https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/](https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/)**
+
+<img src="../report/figures/qr_application.png" alt="QR code vers l'application en ligne" width="160">
+
+Scannez le QR code avec l'appareil photo d'un smartphone pour ouvrir l'application. Elle est hébergée gratuitement sur Streamlit Community Cloud : après quelques jours sans visite, elle se met en veille ; cliquez alors sur « Yes, get this app back up! » et patientez environ une minute.
+
+#### En local (installation)
+
+##### Prérequis
 - Python 3.11 (versions des bibliothèques figées dans `requirements.txt`)
 - Connexion Internet (pour la récupération temps réel des séries météo)
 
-#### Installation des dépendances
+##### Installation des dépendances
 Dans un terminal à la racine du projet :
 ```bash
 pip install -r requirements.txt
 ```
 
-#### Lancement de l'Application Web
+##### Lancement de l'Application Web
 ```bash
 streamlit run app.py
 ```
@@ -40,6 +51,8 @@ L'interface s'ouvre automatiquement dans votre navigateur par défaut à l'adres
 ### 3. Guide Pas à Pas
 
 #### Étape 1 : Profil client et paramètres (barre latérale)
+> Sur téléphone, la barre latérale est repliée au démarrage : touchez le symbole » en haut à gauche pour l'ouvrir, puis touchez à côté pour la refermer.
+
 Dans la barre latérale gauche, renseignez les paramètres du commerçant :
 - **Ville du commerce** : choisissez-la dans le menu déroulant (44 grandes villes françaises, triées par ordre alphabétique ; tapez les premières lettres pour filtrer la liste). Si la ville n'y figure pas, tapez son nom en entier puis validez avec Entrée : n'importe quelle ville reconnue par le service météo est acceptée (ex. *Lorient*).
   - La recherche se fait d'abord **en France**, puis dans le monde entier si rien n'est trouvé ; en cas d'homonymes, la commune la plus peuplée est retenue.
