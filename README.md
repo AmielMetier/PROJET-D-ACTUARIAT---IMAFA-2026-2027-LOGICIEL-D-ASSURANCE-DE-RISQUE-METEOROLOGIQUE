@@ -3,6 +3,16 @@
 Projet d'actuariat — **Polytech Nice Sophia (MAM, parcours IMAFA 2026-2027)**.  
 Enseignant : **Marius AKRE**
 
+## Application en ligne
+
+**[https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/](https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/)**
+
+Utilisable directement depuis un navigateur d'ordinateur ou de téléphone, sans installation. Scannez le QR code avec l'appareil photo d'un smartphone pour l'ouvrir :
+
+<img src="report/figures/qr_application.png" alt="QR code vers l'application en ligne" width="180">
+
+> Hébergée gratuitement sur Streamlit Community Cloud : après quelques jours sans visite, l'application se met en veille et le premier visiteur doit cliquer sur « Yes, get this app back up! » puis patienter environ une minute.
+
 ## Équipe
 - Amiel Metier
 - Tahitoa Senis
@@ -110,7 +120,7 @@ pip install -r requirements.txt
 ```bash
 streamlit run app.py
 ```
-L'application s'ouvre à l'adresse `http://localhost:8501`. Elle propose :
+L'application s'ouvre à l'adresse `http://localhost:8501` (la version en ligne, identique, est sur [ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app](https://ggg-imafa-logiciel-d-assurance-de-risque-meteorologique.streamlit.app/)). Elle propose :
 - dans la barre latérale, le profil du commerçant (ville, CA, coûts fixes, pluie pivot, date de souscription) et les paramètres actuariels (historique, β, frais) ;
 - la tarification prospective avec téléchargement du **devis en PDF** ;
 - l'analyse rétrospective sur une année ou sur une plage d'années, avec graphiques ;
