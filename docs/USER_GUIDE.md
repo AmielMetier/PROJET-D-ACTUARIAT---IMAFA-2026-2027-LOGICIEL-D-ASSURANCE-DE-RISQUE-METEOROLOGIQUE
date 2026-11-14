@@ -71,7 +71,7 @@ Plus bas, la rubrique **Paramètres actuariels** sert aux deux onglets de calcul
 - **Années d'historique** (5 à 30) utilisées pour estimer la prime ;
 - **Chargement de sécurité β** : multiplicateur de l'écart-type des indemnités annuelles (0,30 par défaut) ;
 - **Frais de gestion et marge** (en % de la prime commerciale) ;
-- **Corriger la pluie sur une station au sol** (activé par défaut) : la pluie de réanalyse est recalée sur les relevés de la station météo la plus proche, ce qui supprime le surcoût d'environ 13 % constaté à Nice (section 5). La station utilisée et sa distance s'affichent sous l'interrupteur ; pour les villes sans station de référence, la pluie n'est pas corrigée et l'application le signale.
+- **Corriger la pluie sur une station au sol** : la pluie de réanalyse est recalée sur les relevés de la station météo la plus proche (section 5). L'interrupteur est **activé par défaut dans les 14 villes où la correction a amélioré le tarif** lors du test sur 2014-2025, et désactivé dans les 11 autres (Brest, Lille, Nantes…), où elle l'éloignait de la station ; l'application indique la station utilisée et la raison du réglage. Pour les villes sans station de référence, la pluie n'est pas corrigée et l'application le signale.
 
 #### Étape 2 : Tarification prospective et devis (onglet 1)
 1. Cliquez sur **« Récupérer les données météo temps réel & Calculer la prime »**.
@@ -125,30 +125,30 @@ Plus bas, la rubrique **Paramètres actuariels** sert aux deux onglets de calcul
 #### Pourquoi $\beta = 0{,}30$ ?
 La prime commerciale vaut $P = \dfrac{E[I] + \beta\,\sigma(I)}{1 - \alpha}$, avec des frais $\alpha = 15\,\%$. Les frais étant prélevés sur la prime, l'assureur gagne de l'argent si les indemnités versées restent inférieures à la **prime nette de frais** $P(1 - \alpha)$. L'indicateur à suivre est donc le rapport **sinistres / prime nette de frais** : au-dessus de 100 %, le produit perd de l'argent.
 
-Pour choisir $\beta$, le contrat a été rejoué sur **2001-2025** (chaque année tarifée a priori avec les 15 années précédentes, profil par défaut : CA 1 000 €, Cf 400 €, pivot 10 mm, pluie corrigée sur la station la plus proche) dans trois climats différents :
+Pour choisir $\beta$, le contrat a été rejoué sur **2001-2025** (chaque année tarifée a priori avec les 15 années précédentes, profil par défaut : CA 1 000 €, Cf 400 €, pivot 10 mm, réglages par défaut de l'application : pluie corrigée à Nice et Strasbourg, brute à Brest) dans trois climats différents :
 
 | $\beta$ | Nice : sinistres / prime nette | Nice : années favorables au client | Brest | Strasbourg | Chargement en % de la prime pure |
 |---|---|---|---|---|---|
-| 0 | 101 % | 44 % | 110 % | 101 % | 0 % |
-| 0,30 | **92 %** | **36 %** | 104 % | **94 %** | 6 à 10 % |
-| 0,50 | 88 % | 16 % | 101 % | 90 % | 10 à 16 % |
-| 1 | 77 % | 8 % | 93 % | 82 % | 19 à 32 % |
+| 0 | 101 % | 44 % | 114 % | 101 % | 0 % |
+| 0,30 | **93 %** | **36 %** | 107 % | **94 %** | 6 à 9 % |
+| 0,50 | 88 % | 24 % | 103 % | 90 % | 10 à 16 % |
+| 1 | 77 % | 8 % | 94 % | 82 % | 21 à 31 % |
 
 Ce qu'on en retient :
 - **Sans chargement ($\beta = 0$), le produit perd de l'argent** dans les trois villes. La prime pure est estimée sur les 15 années passées et les années récentes ont souvent été plus pluvieuses : l'estimation a priori est en retard sur le risque réel. Un chargement de sécurité est donc indispensable.
-- **$\beta = 0{,}30$ est la valeur la plus basse testée qui rend le produit rentable à Nice et à Strasbourg** (92 % et 94 %), pour un supplément modéré de 6 à 10 % de la prime pure. Le client garde un intérêt réel : à Nice, l'assurance lui a été favorable plus d'une année sur trois.
+- **$\beta = 0{,}30$ est la valeur la plus basse testée qui rend le produit rentable à Nice et à Strasbourg** (93 % et 94 %), pour un supplément modéré de 6 à 9 % de la prime pure. Le client garde un intérêt réel : à Nice, l'assurance lui a été favorable plus d'une année sur trois.
 - Au-delà, la prime devient chère pour le client : avec $\beta = 1$, l'assurance n'est presque plus jamais favorable à Nice (8 % des années).
-- **Limite** : à Brest, climat plus pluvieux et plus irrégulier, $\beta = 0{,}30$ ne suffit pas (104 %) ; il faudrait $\beta \approx 1$. En pratique, $\beta$ devrait être ajusté par région, ce que permet le curseur de la barre latérale.
+- **Limite** : à Brest, climat plus pluvieux et plus irrégulier, $\beta = 0{,}30$ ne suffit pas (107 %) ; il faudrait $\beta \approx 1$. En pratique, $\beta$ devrait être ajusté par région, ce que permet le curseur de la barre latérale.
 
-Ces conclusions sont les mêmes sans la correction de la pluie (101 / 93 / 88 / 78 % à Nice).
+Ces conclusions ne dépendent pas de la correction de la pluie : sans elle, Nice donne 101 / 93 / 88 / 78 %.
 
 Interprétation : si les indemnités annuelles suivaient une loi normale, $E[I] + 0{,}30\,\sigma(I)$ correspondrait à leur 62e centile, soit une prime chargée dépassée environ quatre années sur dix.
 
 #### Fragilité de la VaR 95 %
 La **VaR 95 %** (montant d'indemnités dépassé une année sur vingt) est affichée, mais elle est **peu fiable** avec 15 années d'historique :
 - avec 15 valeurs, le 95e centile se calcule par interpolation entre la 14e et la 15e valeur classées, c'est-à-dire entre **les deux plus fortes années** de l'échantillon : il dépend presque entièrement de deux observations ;
-- il varie beaucoup selon la période retenue : selon la fenêtre de 15 ans choisie entre 1986 et 2025, il va de 13 009 € à 15 434 € à Nice (+19 %), et de **22 075 € à 30 355 €** à Brest (+38 %) ;
-- un rééchantillonnage (bootstrap) de la période 2011-2025 donne un intervalle de confiance à 90 % de 27 002 € à 32 365 € à Brest.
+- il varie beaucoup selon la période retenue : selon la fenêtre de 15 ans choisie entre 1986 et 2025, il va de 13 172 € à 15 727 € à Nice (+19 %), et de **16 590 € à 24 239 €** à Brest (+46 %) ;
+- un rééchantillonnage (bootstrap) de la période 2011-2025 donne un intervalle de confiance à 90 % de 21 840 € à 26 570 € à Brest.
 
 C'est pourquoi la VaR n'entre pas dans le calcul de la prime : elle sert seulement à illustrer l'ordre de grandeur d'une mauvaise année. La prime repose sur la moyenne et l'écart-type, bien plus stables sur 15 années. Une estimation fiable de la VaR demanderait un historique plus long (le curseur va jusqu'à 30 ans) ou l'ajustement d'une loi sur les indemnités annuelles.
 
@@ -163,19 +163,19 @@ Les précipitations sont téléchargées au moment du calcul depuis **Open-Meteo
 - Dans ce modèle, **toute pluie réduit le chiffre d'affaires** et seuls les jours au-delà du seuil critique déclenchent une indemnité : le nombre de jours pluvieux et l'intensité des épisodes pèsent donc directement sur la prime. Selon la ville, le premier biais tend à sous-estimer la prime, le second peut la surestimer.
 
 #### Comparaison avec une station au sol (Nice, 2001-2025)
-Pour mesurer ces biais, les données utilisées par le logiciel ont été comparées aux relevés de la station **Nice-aéroport** (identifiant GHCN-Daily `FRE00104120`, relevés Météo-France diffusés par le [NCEI](https://www.ncei.noaa.gov), source citée par le sujet), sur 25 années complètes, sans aucun jour manquant. Le calcul se refait avec `python scripts/comparaison_station.py`.
+Pour mesurer ces biais, les données utilisées par le logiciel ont été comparées aux relevés de la station **Nice-aéroport** (identifiant GHCN-Daily `FRE00104120`, relevés Météo-France diffusés par le [NCEI](https://www.ncei.noaa.gov), source citée par le sujet), sur 25 années complètes, sans aucun jour manquant. C'est aussi la station qui sert au calage de la correction pour Nice : le script de comparaison la lit dans le fichier de calage, pour que les deux portent toujours sur les mêmes relevés. Le calcul se refait avec `python scripts/comparaison_station.py`.
 
 | Moyenne annuelle (profil par défaut) | Open-Meteo brut | Open-Meteo corrigé | Station Nice-aéroport | Écart brut | Écart corrigé |
 |---|---|---|---|---|---|
-| Cumul de pluie | 821 mm | 700 mm | 714 mm | +15 % | −2 % |
-| Jours avec pluie (> 0 mm) | 157 | 88 | 86 | **+83 %** | +2 % |
+| Cumul de pluie | 821 mm | 716 mm | 714 mm | +15 % | 0 % |
+| Jours avec pluie (> 0 mm) | 157 | 86 | 86 | **+83 %** | 0 % |
 | Jours ≥ 1 mm | 93 | 60 | 61 | +54 % | −2 % |
-| Jours ≥ 6 mm (seuil de perte) | 36,3 | 30,6 | 31,2 | +16 % | −2 % |
-| Jours ≥ 10 mm (activité arrêtée) | 24,2 | 21,8 | 22,3 | +9 % | −2 % |
-| Pluie journalière maximale | 61,7 mm | 68,0 mm | 69,3 mm | −11 % | −2 % |
-| Prime pure $E[I]$ | 11 782 € | 10 184 € | 10 415 € | +13 % | −2 % |
-| Prime commerciale | 15 196 € | 13 193 € | 13 463 € | **+13 %** | **−2 %** |
-| Résultat annuel non assuré | 168 071 € | 181 625 € | 180 972 € | −7 % | 0 % |
+| Jours ≥ 6 mm (seuil de perte) | 36,3 | 31,4 | 31,2 | +16 % | +1 % |
+| Jours ≥ 10 mm (activité arrêtée) | 24,2 | 22,4 | 22,3 | +9 % | +1 % |
+| Pluie journalière maximale | 61,7 mm | 68,7 mm | 69,3 mm | −11 % | −1 % |
+| Prime pure $E[I]$ | 11 782 € | 10 420 € | 10 415 € | +13 % | 0 % |
+| Prime commerciale | 15 196 € | 13 494 € | 13 463 € | **+13 %** | **0 %** |
+| Résultat annuel non assuré | 168 071 € | 180 875 € | 180 972 € | −7 % | 0 % |
 
 <p align="center"><img src="../report/figures/comparaison_station_nice.png" alt="Indemnités annuelles et nombre de jours de pluie selon la source" width="100%"></p>
 <p align="center"><em>Figure 6 — Nice, 2001-2025 : indemnités annuelles et jours de pluie selon la source (réanalyse ou station).</em></p>
@@ -193,19 +193,21 @@ $$pl_t^{\text{corrigée}} = F_{\text{station}}^{-1}\big(F_{\text{réanalyse}}(pl
 
 Chaque pluie journalière de la réanalyse est remplacée par la pluie de la station de même rang dans la distribution. Les bruines que la station ne voit pas deviennent des jours secs, et les intensités autour du seuil de perte sont recalées sur la station. L'ordre des journées est conservé.
 
-- **Calage** : pour chacune des 44 villes du menu, le script `scripts/calibrer_correction.py` cherche la station GHCN-Daily (NCEI) la plus proche, à moins de 35 km, avec des relevés de pluie complets à au moins 85 % ; les tables de quantiles sont stockées dans `data/calibration_stations.json`. **28 villes** ont une station de référence ; pour les 16 autres (Bordeaux, Grenoble, Reims…), la pluie n'est pas corrigée et l'application l'indique.
+- **Choix des stations** : pour chacune des 44 villes du menu, le script `scripts/calibrer_correction.py` retient une station **française** du réseau GHCN-Daily (NCEI) **à moins de 25 km**, avec des relevés de pluie complets à au moins 85 % ; parmi les stations valides situées à moins de 3 km de plus que la plus proche, la plus complète l'emporte (à Nice, la station `FRE00104120`, complète à 100 %, plutôt que `FRM00007690`, du même aéroport mais complète à 95 %). Les tables de quantiles sont stockées dans `data/calibration_stations.json`. **25 villes** ont une station de référence ; pour les 19 autres (Bordeaux, Grenoble, Pau, Bayonne, Biarritz…), la pluie n'est pas corrigée et l'application l'indique.
 - **Validation hors échantillon** : la correction a été calée sur 2001-2013 seulement, puis les indemnités annuelles moyennes de 2014-2025 ont été comparées à celles calculées sur la station :
 
-| 28 villes, période de test 2014-2025 | Réanalyse brute | Réanalyse corrigée |
+| 25 villes, période de test 2014-2025 | Réanalyse brute | Réanalyse corrigée |
 |---|---|---|
-| Écart moyen des indemnités à la station | +20,4 % | **+9,5 %** |
-| Écart absolu moyen | 23,2 % | **12,4 %** |
-| Villes où l'estimation se rapproche de la station | — | 18 sur 28 |
+| Écart moyen des indemnités à la station | +22,9 % | **+11,5 %** |
+| Écart absolu moyen | 24,1 % | **13,3 %** |
+| Villes où l'estimation se rapproche de la station | — | 14 sur 25 |
 
-La correction **divise par deux l'erreur moyenne** sur des années qu'elle n'a pas vues. Elle a été comparée à une méthode plus simple (multiplier les indemnités par le rapport station / réanalyse observé sur 2001-2013), un peu moins bonne (13,0 % d'écart absolu moyen) et moins cohérente, car elle ne corrige pas la pluie elle-même.
+La correction **divise presque par deux l'erreur moyenne** sur des années qu'elle n'a pas vues. Elle a été comparée à une méthode plus simple (multiplier les indemnités par le rapport station / réanalyse observé sur 2001-2013), équivalente en moyenne (13,4 % d'écart absolu moyen) mais moins cohérente, car elle ne corrige pas la pluie elle-même.
 
-- **Effet sur le tarif à Nice** (souscription au 14/11/2026) : la prime commerciale passe de **15 875 € à 13 868 €** (−12,6 %), ce qui compense le surcoût de 13 % mesuré face à la station.
-- **Limites** : la correction n'est pas parfaite. Dans 10 villes sur 28, surtout sur la façade atlantique (Brest, Nantes, Rennes, Lille, Caen), elle éloigne l'estimation de la station sur 2014-2025, car l'écart entre les deux sources a changé d'une période à l'autre. Il subsiste en moyenne un léger surcoût (+9,5 %). La station de référence peut aussi être à plus de 20 km (Cannes utilise la station de Nice, Bayonne celle de Saint-Sébastien). L'interrupteur de la barre latérale permet de comparer les deux tarifs.
+- **Activation ville par ville** : dans 11 villes sur 25 (Brest, Caen, Cannes, Lille, Limoges, Lyon, Nantes, Poitiers, Rennes, Rouen, Tours), la correction a **éloigné** l'estimation de la station sur 2014-2025 (par exemple Brest, de −13 % à +27 %, ou Lille, de −3 % à +12 %), car l'écart entre les deux sources a changé d'une période à l'autre. Dans ces villes, l'interrupteur est donc **désactivé par défaut** ; il reste activé dans les 14 villes où elle a amélioré le tarif. Ce réglage s'appuie sur la période de test elle-même : c'est une règle de prudence, pas une nouvelle validation.
+- **Effet sur le tarif à Nice** (souscription au 14/11/2026) : la prime commerciale passe de **15 875 € à 14 183 €** (−10,7 %), ce qui compense l'essentiel du surcoût de 13 % mesuré face à la station.
+- **Information future dans l'analyse rétrospective** : la table de correction est calée une fois pour toutes sur 2001-2025, puis appliquée à toutes les années, y compris pour tarifer « a priori » une année passée comme 1998. La prime rétrospective utilise donc indirectement des relevés postérieurs à l'année étudiée. Ce choix est assumé : la correction ne porte que sur la forme de la distribution des pluies (combien de jours de bruine, quelle intensité), pas sur la pluie réellement tombée l'année étudiée. Pour une rétrospective strictement a priori, il suffit de désactiver la correction.
+- **Limites** : même dans les villes où elle est activée, un léger surcoût subsiste en moyenne, et certaines stations sont à 15-25 km de la ville (Paris-Orly, Marseille-Marignane, Bâle-Mulhouse, la Pointe de Chassiron pour La Rochelle). L'interrupteur de la barre latérale permet toujours de comparer les deux tarifs.
 
 ---
 

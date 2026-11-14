@@ -60,4 +60,8 @@ def test_bundled_calibrations_are_consistent():
         q = cal["qmap"]
         assert len(q["probs"]) == len(q["q_model"]) == len(q["q_obs"])
         assert np.all(np.diff(q["q_model"]) >= 0) and np.all(np.diff(q["q_obs"]) >= 0)
-        assert cal["distance_km"] <= 35          # rayon de recherche du script de calibration
+        assert cal["distance_km"] <= 25          # rayon de recherche du script de calibration
+        assert cal["station_id"].startswith("FR")  # stations françaises uniquement
+        v = cal["validation"]                       # activée par défaut seulement si elle aide hors échantillon
+        helps = abs(v["indemnity_corrected"] - v["indemnity_station"]) < abs(v["indemnity_model"] - v["indemnity_station"])
+        assert cal["recommended"] == helps

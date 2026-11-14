@@ -34,20 +34,43 @@ from src.simulation import ClientProfile, simulate_year                         
 from src.weather_api import get_coordinates, fetch_historical_precipitation, WeatherAPIError         # noqa: E402
 
 
+CACHE_DIR = ROOT / "data" / "cache"   # ignoré par Git : évite de retélécharger lors d'une relance
+
+
 def patient(func, *args):
-    """Appel à Open-Meteo qui attend et réessaie si la limite de requêtes par minute est atteinte."""
-    for attempt in range(5):
+    """
+    Appel à Open-Meteo qui attend et réessaie si une limite de requêtes est atteinte
+    (1 minute pour la limite par minute, 10 minutes pour la limite horaire de l'offre gratuite).
+    """
+    for attempt in range(12):
         try:
             time.sleep(2)
             return func(*args)
         except WeatherAPIError as e:
             if "429" not in str(e):
                 raise
-            time.sleep(65)
+            wait = 600 if "Hourly" in str(e) else 65
+            print(f"   limite Open-Meteo atteinte, nouvel essai dans {wait // 60} min", flush=True)
+            time.sleep(wait)
     raise RuntimeError("Open-Meteo refuse toujours les requêtes")
 
+
+def cached(name, loader):
+    """Série mise en cache dans data/cache/ (CSV)."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    path = CACHE_DIR / f"{name}.csv"
+    if path.exists():
+        df = pd.read_csv(path, parse_dates=["date"])
+        return df if not df.empty else None
+    df = loader()
+    if df is not None:
+        df.to_csv(path, index=False)
+    return df
+
 FIRST, LAST, SPLIT = 2001, 2025, 2013          # calage 2001-2013, validation 2014-2025
-MAX_KM, MIN_COMPLETENESS = 35.0, 0.85
+MAX_KM, MIN_COMPLETENESS = 25.0, 0.85
+TIE_KM = 3.0               # parmi les stations à moins de 3 km de plus que la plus proche, la plus complète l'emporte
+COUNTRY_PREFIX = "FR"      # stations françaises uniquement (même réseau, même climat de référence)
 FIRST_RECORD_MAX = 2005    # la station doit avoir des relevés avant 2005
 GHCN = "https://www.ncei.noaa.gov/pub/data/ghcn/daily"
 NCEI_URL = "https://www.ncei.noaa.gov/access/services/data/v1"
@@ -112,17 +135,39 @@ def mean_annual_indemnity(df, column, years):
     return float(np.mean(values)) if values else float("nan")
 
 
+def pick_station(stations):
+    """
+    Station de référence : française, à moins de MAX_KM, relevés complets à MIN_COMPLETENESS au moins.
+    Parmi les stations valides situées à moins de TIE_KM de plus que la plus proche, la plus complète
+    est retenue (deux stations d'un même aéroport, par exemple, ne diffèrent que par leur complétude).
+    """
+    near = stations[(stations["dist"] <= MAX_KM) & stations["id"].str.startswith(COUNTRY_PREFIX)].sort_values("dist")
+    days = len(pd.date_range(f"{FIRST}-01-01", f"{LAST}-12-31"))
+    chosen, first_valid = None, None
+    for _, st in near.head(8).iterrows():
+        if first_valid is not None and st["dist"] > first_valid + TIE_KM:
+            break
+        obs = cached(f"ncei_{st['id']}_{FIRST}_{LAST}", lambda: station_series(st["id"]))
+        if obs is None:
+            continue
+        completeness = len(obs) / days
+        if completeness < MIN_COMPLETENESS:
+            continue
+        first_valid = st["dist"] if first_valid is None else first_valid
+        if chosen is None or completeness > chosen[2]:
+            chosen = (st, obs, completeness)
+    return chosen
+
+
 def calibrate_city(city, stations):
     lat, lon, label = patient(get_coordinates, city)
     stations = stations.assign(dist=[km(lat, lon, a, b) for a, b in zip(stations["lat"], stations["lon"])])
-    for _, st in stations[stations["dist"] <= MAX_KM].sort_values("dist").head(3).iterrows():
-        obs = station_series(st["id"])
-        if obs is None:
-            continue
-        completeness = len(obs) / len(pd.date_range(f"{FIRST}-01-01", f"{LAST}-12-31"))
-        if completeness < MIN_COMPLETENESS:
-            continue
-        grid = patient(fetch_historical_precipitation, lat, lon, f"{FIRST}-01-01", f"{LAST}-12-31")
+    chosen = pick_station(stations)
+    if chosen is not None:
+        st, obs, completeness = chosen
+        grid = cached(f"openmeteo_{lat:.4f}_{lon:.4f}_{FIRST}_{LAST}",
+                      lambda: patient(fetch_historical_precipitation, lat, lon, f"{FIRST}-01-01", f"{LAST}-12-31"))
+        grid["missing"] = grid["missing"].astype(bool)
         both = grid.merge(obs, on="date")              # jours où la station a un relevé
         both = both[~both["missing"]]
         first_obs_year = int(both["date"].dt.year.min())
@@ -156,6 +201,8 @@ def calibrate_city(city, stations):
                 "indemnity_ratio_method": round(v_ratio),
             },
             "indemnity_ratio": round(full_ratio, 4),
+            # Correction activée par défaut seulement si elle a rapproché les indemnités 2014-2025 de la station
+            "recommended": bool(abs(v_corr - v_obs) < abs(v_model - v_obs)),
             "qmap": fit_quantile_map(both["precipitation"], both["station"]),
         }
     return _normalize(city), None
@@ -174,7 +221,8 @@ def main():
         result[key] = cal
         v = cal["validation"]
         print(f"{city:18s} : {cal['station_name']:28s} {cal['distance_km']:5.1f} km | indemnités 2014-2025 "
-              f"brut {v['indemnity_model']:6d} / quantiles {v['indemnity_corrected']:6d} / rapport {v['indemnity_ratio_method']:6d} / station {v['indemnity_station']:6d} €")
+              f"brut {v['indemnity_model']:6d} / quantiles {v['indemnity_corrected']:6d} / rapport {v['indemnity_ratio_method']:6d} / station {v['indemnity_station']:6d} € "
+              f"| {'activée' if cal['recommended'] else 'désactivée'} par défaut")
     CALIBRATION_FILE.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
 
     # Bilan de la validation hors échantillon
@@ -186,6 +234,8 @@ def main():
           f"absolu moyen {np.mean(np.abs(err_raw)):.1%} | corrigé : moyen {np.mean(err_cor):+.1%}, "
           f"absolu moyen {np.mean(np.abs(err_cor)):.1%} | rapport : moyen {np.mean(err_rat):+.1%}, "
           f"absolu moyen {np.mean(np.abs(err_rat)):.1%}")
+    off = [c["city"] for c in result.values() if not c["recommended"]]
+    print(f"Correction désactivée par défaut dans {len(off)} villes : {', '.join(off)}")
     print(f"Fichier écrit : {CALIBRATION_FILE.relative_to(ROOT)}")
 
 

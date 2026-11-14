@@ -6,7 +6,8 @@ Usage, depuis la racine du projet :
     python scripts/comparaison_station.py
 
 Sorties : un tableau dans le terminal et la figure report/figures/comparaison_station_nice.png.
-Station par défaut : FRE00104120, Nice (aéroport), relevés Météo-France diffusés par NCEI.
+La station comparée est celle qui sert au calage de la correction (data/calibration_stations.json),
+pour que comparaison et correction portent toujours sur les mêmes relevés.
 """
 
 import io
@@ -30,15 +31,14 @@ from src.formatting import fmt_eur, fmt_num                           # noqa: E4
 from src.bias_correction import find_calibration, correct_dataframe  # noqa: E402
 
 CITY = "Nice"
-STATION_ID, STATION_LABEL = "FRE00104120", "Nice (aéroport)"
 FIRST_YEAR, LAST_YEAR = 2001, 2025
 PROFILE = ClientProfile(ca_max=1000.0, cf=400.0, pl_pivot=10.0, city=CITY, subscription_date="2026-01-01")
 NCEI_URL = "https://www.ncei.noaa.gov/access/services/data/v1"
 
 
-def fetch_station():
+def fetch_station(station_id):
     params = {
-        "dataset": "daily-summaries", "stations": STATION_ID, "dataTypes": "PRCP",
+        "dataset": "daily-summaries", "stations": station_id, "dataTypes": "PRCP",
         "startDate": f"{FIRST_YEAR}-01-01", "endDate": f"{LAST_YEAR}-12-31",
         "format": "csv", "units": "metric",
     }
@@ -76,9 +76,12 @@ def yearly_stats(periods):
 def main():
     lat, lon, label = get_coordinates(CITY)
     grid = fetch_historical_precipitation(lat, lon, f"{FIRST_YEAR}-01-01", f"{LAST_YEAR}-12-31")
-    station = fetch_station()
 
     calibration = find_calibration(CITY, lat, lon)
+    if calibration is None:
+        raise SystemExit(f"Aucune station de référence calée pour {CITY}.")
+    station_id, station_label = calibration["station_id"], calibration["station_name"]
+    station = fetch_station(station_id)
     corrected = correct_dataframe(grid, calibration)
 
     p_grid = split_into_coverage_periods(grid, 1, 1, FIRST_YEAR, LAST_YEAR)
@@ -96,7 +99,7 @@ def main():
     price_s = price_contract_historical({y: p["precipitation"] for y, p in p_station.items()}, PROFILE)
 
     print(f"Open-Meteo : point de grille de {label} ({lat:.3f} ; {lon:.3f})")
-    print(f"Station    : {STATION_ID} {STATION_LABEL} — {len(common)} années complètes "
+    print(f"Station    : {station_id} {station_label} — {len(common)} années complètes "
           f"({common[0]}-{common[-1]}), {missing} jours manquants comptés à 0 mm")
     print()
     print(f"Correction : {'station ' + calibration['station_id'] if calibration else 'aucune calibration trouvée'}")
@@ -129,7 +132,7 @@ def main():
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.4), gridspec_kw={"width_ratios": [2.2, 1]})
     x = np.arange(len(common))
     ax1.bar(x - 0.2, g["indemnites"], 0.4, label="Open-Meteo (point de grille)", color="#2B6CB0")
-    ax1.bar(x + 0.2, s["indemnites"], 0.4, label=f"Station {STATION_LABEL}", color="#ED8936")
+    ax1.bar(x + 0.2, s["indemnites"], 0.4, label=f"Station {station_label}", color="#ED8936")
     ax1.set_xticks(x[::2], [str(y) for y in common[::2]], rotation=45)
     ax1.set_ylabel("Indemnités annuelles (€)")
     ax1.set_title("Indemnités annuelles selon la source de pluie")

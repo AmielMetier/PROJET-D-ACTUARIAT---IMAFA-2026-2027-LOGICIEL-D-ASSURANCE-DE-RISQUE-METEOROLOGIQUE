@@ -147,15 +147,21 @@ expense_rate = st.sidebar.slider("Frais de gestion & marge commerciale (%)", min
 # Correction du biais de la réanalyse, calée sur la station au sol la plus proche (guide, section 5)
 calibration = find_calibration(city, *(location[:2] if location else (None, None)))
 if calibration:
+    # Activée par défaut seulement là où elle a rapproché le tarif de la station sur 2014-2025 (guide, section 5)
+    recommended = calibration.get("recommended", True)
     use_correction = st.sidebar.toggle(
-        "Corriger la pluie sur une station au sol", value=True,
+        "Corriger la pluie sur une station au sol", value=recommended,
+        key=f"correction_{calibration['station_id']}_{calibration['city']}",
         help=("La réanalyse Open-Meteo compte trop de jours de bruine et lisse les fortes pluies. La correction "
               "par quantiles recale sa distribution sur les relevés de la station la plus proche (2001-2025)."),
     )
-    v = calibration["validation"]
+    note = "" if use_correction else " Correction désactivée : pluie brute."
+    if not recommended:
+        note += (" Désactivée par défaut pour cette ville : testée sur 2014-2025, elle n'y a pas rapproché "
+                 "le tarif de la station.")
     st.sidebar.caption(
         f"Station de référence : **{calibration['station_name']}** ({fmt_num(calibration['distance_km'], 0)} km, "
-        f"GHCN {calibration['station_id']})." + ("" if use_correction else " Correction désactivée : pluie brute.")
+        f"GHCN {calibration['station_id']})." + note
     )
 else:
     use_correction = False
@@ -482,7 +488,8 @@ with tab_guide:
     plus de jours de pluie et donne une prime **environ 13 % plus élevée** ; l'ordre des bonnes et mauvaises années est
     en revanche bien respecté (corrélation de 0,87).
 
-    **Correction** : par défaut, la pluie est recalée sur la station au sol la plus proche par la méthode des quantiles
-    (28 villes du menu). Testée sur 2014-2025 avec un calage sur 2001-2013, elle divise par deux l'écart moyen des
-    indemnités avec les stations (de 23 % à 12 %). Détails dans la section 5 du guide.
+    **Correction** : la pluie peut être recalée sur la station au sol la plus proche par la méthode des quantiles
+    (25 villes du menu). Testée sur 2014-2025 avec un calage sur 2001-2013, elle divise presque par deux l'écart moyen
+    des indemnités avec les stations (de 24 % à 13 %). Elle est activée par défaut dans les 14 villes où elle a amélioré
+    le tarif, désactivée dans les 11 autres. Détails dans la section 5 du guide.
     """)
