@@ -1,0 +1,14 @@
+# Outils de développement, non nécessaires pour faire tourner l'application.
+-r requirements.txt
+
+# Notebook et figures (notebooks/, scripts/comparaison_station.py)
+jupyterlab>=4.0.0
+matplotlib==3.10.7
+
+# Exécution du notebook en ligne de commande
+nbclient==0.10.2
+ipykernel==6.30.1
+
+# Génération du guide PDF (scripts/generer_guide_pdf.py)
+markdown==3.10
+playwright==1.55.0
