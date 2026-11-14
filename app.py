@@ -61,6 +61,21 @@ def require_location(coords, city_name: str):
 
 
 # En-tête principal
+# Indicateurs lisibles à toutes les largeurs : sans ce style, Streamlit tronque les montants
+# (« 12 478,… ») dès que la colonne est étroite (tablette, petite fenêtre avec barre latérale ouverte).
+st.markdown("""
+<style>
+[data-testid="stMetricValue"] { font-size: clamp(1.3rem, 0.9rem + 1.3vw, 2.25rem); }
+[data-testid="stMetricValue"] div,
+[data-testid="stMetricLabel"] div,
+[data-testid="stMetricLabel"] p {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("Logiciel d'Assurance de Risque Météorologique")
 st.caption("IMAFA 2026-2027 — Modélisation Actuarielle, Pricing & Analyse Rétrospective | Enseignant : Marius AKRE")
 
@@ -123,7 +138,9 @@ hist_years = st.sidebar.slider("Années d'historique météo utilisées pour tar
 safety_beta = st.sidebar.slider(
     "Chargement de sécurité β (× écart-type)",
     min_value=0.0, max_value=1.0, value=0.30, step=0.05,
-    help="Prime chargée = E[I] + β × σ(I) : plus les indemnités annuelles sont irrégulières, plus le chargement est élevé.",
+    help=("Prime chargée = E[I] + β × σ(I) : plus les indemnités annuelles sont irrégulières, plus le chargement est élevé. "
+          "0,30 par défaut : sans chargement (β = 0), le produit aurait perdu de l'argent sur 2001-2025 à Nice, Brest et "
+          "Strasbourg ; avec 0,30 il est rentable à Nice et Strasbourg (justification détaillée dans le guide)."),
 )
 expense_rate = st.sidebar.slider("Frais de gestion & marge commerciale (%)", min_value=5, max_value=30, value=15) / 100.0
 
@@ -212,7 +229,9 @@ with tab_pricing:
         m3.metric("Prime commerciale annuelle", fmt_eur(res["commercial_premium"]))
         m4, m5, m6 = st.columns(3)
         m4.metric("VaR 95 % des indemnités", fmt_eur(res["var_95"]),
-                  help="Montant d'indemnités annuelles dépassé en moyenne une année sur vingt (95e centile historique).")
+                  help=("Montant d'indemnités annuelles dépassé en moyenne une année sur vingt (95e centile historique). "
+                       "Indicatif seulement : estimé sur 15 années environ, ce centile repose presque entièrement sur les "
+                       "deux plus fortes années et varie fortement d'une période à l'autre. Il n'entre pas dans le calcul de la prime."))
         m5.metric("Pire année historique", fmt_eur(res["max_historical_claim"]))
         m6.metric("Chargement de sécurité β·σ", fmt_eur(res["safety_loading"]))
         st.caption(
@@ -435,5 +454,7 @@ with tab_guide:
     calculées sur un **point de grille** d'environ 10 à 25 km, et non les relevés d'une station au sol. Les réanalyses
     ont tendance à **lisser les fortes pluies** et à compter **trop de jours de pluie faible**. Dans ce modèle, toute
     pluie réduit le chiffre d'affaires : le nombre de jours pluvieux et l'intensité des épisodes pèsent donc
-    directement sur la prime.
+    directement sur la prime. Comparée à la station de Nice-aéroport sur 2001-2025, cette source compte presque deux fois
+    plus de jours de pluie et donne une prime **environ 13 % plus élevée** ; l'ordre des bonnes et mauvaises années est
+    en revanche bien respecté (corrélation de 0,87). Détails dans la section 5 du guide.
     """)
