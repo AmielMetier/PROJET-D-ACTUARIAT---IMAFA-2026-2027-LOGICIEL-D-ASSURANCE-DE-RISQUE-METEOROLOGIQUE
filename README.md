@@ -85,7 +85,9 @@ L'indemnité annuelle $I = \sum_{t=1}^{365} I_t$ est rejouée sur les $N$ année
 $$P_{pure} = \mathbb{E}[I]$$
 La prime commerciale annuelle applique le **principe de l'écart-type** (le chargement de sécurité croît avec la volatilité climatique) puis les frais de gestion et la marge :
 $$P = \frac{\mathbb{E}[I] + \beta \cdot \sigma(I)}{1 - \alpha}$$
-*(où $\beta$ est le coefficient de chargement de sécurité, 0,30 par défaut, et $\alpha$ le taux de frais de gestion).* La VaR 95 % des indemnités annuelles est également affichée.
+*(où $\beta$ est le coefficient de chargement de sécurité, 0,30 par défaut, et $\alpha$ le taux de frais de gestion).*
+
+Le choix $\beta = 0{,}30$ est justifié par un backtest sur 2001-2025 : sans chargement, le produit aurait perdu de l'argent à Nice, Brest et Strasbourg ; avec 0,30, il est rentable à Nice et Strasbourg pour un chargement de 6 à 9 % de la prime pure. La VaR 95 % des indemnités est affichée à titre indicatif : estimée sur 15 années, elle est peu fiable et n'entre pas dans la prime. Détails dans la section 4 du [guide](docs/USER_GUIDE.md).
 
 ### 5. Analyse rétrospective
 Pour une année passée $a$, la prime $P_a$ est calculée **a priori**, comme au 1er janvier de $a$, avec les seules années antérieures. Elle est ensuite comparée aux résultats réellement observés pendant $a$ : s'assurer a été favorable si les indemnités reçues dépassent $P_a$.
@@ -110,12 +112,17 @@ Pour une année passée $a$, la prime $P_a$ est calculée **a priori**, comme au
 │   └── 01_tarification_et_analyse_retrospective.ipynb  # Démonstration et validation pas-à-pas
 ├── tests/                 # Tests unitaires automatisés (Pytest, fonctionnent hors ligne)
 ├── data/
-│   └── nice_1998_rain.csv # Précipitations journalières de Nice en 1998 (référence)
+│   └── nice_1998_rain.csv # Pluie réelle de Nice en 1998 (test de non-régression hors ligne)
 ├── docs/
-│   └── USER_GUIDE.md      # Manuel d'utilisation complet du logiciel
-├── report/figures/        # Figures du rapport
+│   ├── USER_GUIDE.md      # Manuel d'utilisation complet du logiciel
+│   └── USER_GUIDE.pdf     # Version PDF du manuel (envoi par mail)
+├── scripts/
+│   ├── generer_guide_pdf.py     # Génère docs/USER_GUIDE.pdf
+│   └── comparaison_station.py   # Compare Open-Meteo à la station Nice-aéroport (NCEI)
+├── report/figures/        # Captures d'écran, QR code et figures
 ├── PROJET-ACTUARIAT- LOGICIEL D ASSURANCE DE RISQUE METEOROLOGIQUE.pdf # Sujet officiel
-├── requirements.txt       # Dépendances Python (versions figées)
+├── requirements.txt       # Dépendances de l'application (versions figées)
+├── requirements-dev.txt   # Outils en plus : notebook, figures, guide PDF
 └── README.md
 ```
 
@@ -150,7 +157,9 @@ L'application s'ouvre à l'adresse `http://localhost:8501` (la version en ligne,
 - le guide d'utilisation intégré.
 
 ### Lancement des Notebooks
+Le notebook et les scripts d'analyse demandent quelques outils de plus (JupyterLab, Matplotlib) :
 ```bash
+pip install -r requirements-dev.txt
 jupyter lab notebooks/01_tarification_et_analyse_retrospective.ipynb
 ```
 
