@@ -56,7 +56,7 @@ Le logiciel répond aux exigences des trois départements de la compagnie :
 
 Le projet met également l'accent sur les critères de valorisation du barème :
 - **Digitalisation & Responsive Web/Mobile** : interface web développée avec **Streamlit** et visualisations **Plotly**, utilisable depuis un ordinateur ou un téléphone.
-- **Données Météorologiques en Temps Réel** : précipitations journalières téléchargées au moment du calcul depuis l'API Open-Meteo (réanalyses ERA5, point de grille le plus proche de la ville), sans clé d'API, puis **corrigées sur la station au sol la plus proche** (méthode des quantiles, 25 villes calées sur les relevés NCEI, correction activée par défaut dans les 14 où elle améliore le tarif), ce qui supprime l'essentiel du surcoût d'environ 13 % de la réanalyse.
+- **Données Météorologiques en Temps Réel** : précipitations journalières téléchargées au moment du calcul depuis l'API Open-Meteo (réanalyses ERA5, point de grille le plus proche de la ville), sans clé d'API, puis **corrigées sur la station au sol la plus proche** (méthode des quantiles, 25 villes calées sur les relevés NCEI, correction activée par défaut dans les 14 où elle améliore le tarif), ce qui supprime l'essentiel du surcoût d'environ 13 % de la réanalyse. Chaque téléchargement est gardé **6 heures en mémoire** : l'archive n'est mise à jour qu'une fois par jour, et ce cache accélère les calculs et protège l'application de la limite de requêtes d'Open-Meteo.
 
 ---
 

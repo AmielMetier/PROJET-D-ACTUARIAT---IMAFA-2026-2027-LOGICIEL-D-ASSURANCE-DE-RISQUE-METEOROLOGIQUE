@@ -32,3 +32,4 @@ Thumbs.db
 # Configuration locale de Claude Code
 .claude/
 !docs/USER_GUIDE.pdf
+!report/dossier_projet.pdf

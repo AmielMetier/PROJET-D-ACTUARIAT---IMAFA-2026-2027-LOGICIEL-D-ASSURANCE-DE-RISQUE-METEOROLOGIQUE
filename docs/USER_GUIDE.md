@@ -158,6 +158,8 @@ C'est pourquoi la VaR n'entre pas dans le calcul de la prime : elle sert seuleme
 
 Les précipitations sont téléchargées au moment du calcul depuis **Open-Meteo** (API gratuite, sans clé), qui s'appuie sur les **réanalyses ERA5 et ERA5-Land** du centre européen ECMWF.
 
+Chaque série téléchargée est ensuite **gardée 6 heures en mémoire** (cache partagé par tous les utilisateurs de l'application en ligne). L'archive n'étant mise à jour qu'une fois par jour et les années passées ne changeant plus, les données restent à jour ; le cache évite seulement de retélécharger 15 à 40 ans de pluie à chaque clic et protège l'application de la limite de requêtes du service gratuit. Rien n'est écrit sur le disque, une erreur réseau n'est jamais mise en cache, et l'heure de récupération des données est affichée sous chaque résultat.
+
 - Ce ne sont **pas les relevés d'une station au sol** : ce sont des valeurs calculées sur un **point de grille** d'environ 10 à 25 km de côté, le plus proche de la ville choisie. Le logiciel parle donc de « point de grille », pas de station.
 - Les réanalyses ont tendance à **lisser les fortes pluies** (les orages locaux sont sous-estimés) et à compter **trop de jours de pluie faible** (bruine répartie sur toute la maille).
 - Dans ce modèle, **toute pluie réduit le chiffre d'affaires** et seuls les jours au-delà du seuil critique déclenchent une indemnité : le nombre de jours pluvieux et l'intensité des épisodes pèsent donc directement sur la prime. Selon la ville, le premier biais tend à sous-estimer la prime, le second peut la surestimer.

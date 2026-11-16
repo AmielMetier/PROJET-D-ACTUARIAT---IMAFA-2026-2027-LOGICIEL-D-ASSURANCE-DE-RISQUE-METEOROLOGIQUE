@@ -12,7 +12,8 @@ from src.pricing import price_contract_historical, split_into_coverage_periods, 
 from src.backtesting import run_retrospective_analysis, run_multi_year_backtest
 from src.visualisations import plot_retrospective_comparison, plot_cumulative_results, plot_multi_year_backtest
 from src.pdf_generator import generate_devis_pdf, make_quote_ref
-from src.weather_api import get_coordinates, fetch_historical_precipitation, WeatherAPIError
+from src.weather_api import get_coordinates, WeatherAPIError
+from src.weather_cache import fetch_precipitation_cached, fetched_label
 from src.formatting import fmt_eur, fmt_num, fmt_pct
 from src.cities import CITY_CHOICES
 from src.bias_correction import find_calibration, correct_dataframe
@@ -199,9 +200,10 @@ with tab_pricing:
                 # Historique : périodes de 365 jours commençant au jour/mois de la souscription
                 latest_available = date.today() - timedelta(days=ARCHIVE_DELAY_DAYS)
                 first_year = latest_available.year - hist_years - 1
-                df_precip = correct_dataframe(fetch_historical_precipitation(
+                raw, fetched_at = fetch_precipitation_cached(
                     lat, lon, f"{first_year}-01-01", latest_available.isoformat()
-                ), active_calibration)
+                )
+                df_precip = correct_dataframe(raw, active_calibration)
                 periods = split_into_coverage_periods(
                     df_precip, sub_date.month, sub_date.day, first_year, latest_available.year
                 )
@@ -225,6 +227,7 @@ with tab_pricing:
                     "coords": (lat, lon),
                     "history_label": f"{first_p['start']:%d/%m/%Y} au {last_p['end']:%d/%m/%Y} ({len(periods)} années)",
                     "correction": source_note(active_calibration),
+                    "fetched": fetched_label(fetched_at),
                     "missing_days": sum(p["missing_days"] for p in periods.values()),
                 }
             except (WeatherAPIError, ValueError) as e:
@@ -242,7 +245,7 @@ with tab_pricing:
         st.caption(
             f"Couverture du **{sub_date:%d/%m/%Y}** au **{coverage_end(sub_date):%d/%m/%Y}** — "
             f"tarif établi sur les périodes équivalentes du {pricing['history_label']}, "
-            f"au point de grille de {pricing['station']}. {pricing['correction']}"
+            f"au point de grille de {pricing['station']}. {pricing['correction']} {pricing['fetched']}"
         )
         if res["n_years"] < hist_years:
             st.info(f"Seules {res['n_years']} années complètes étaient disponibles (sur {hist_years} demandées).")
@@ -311,8 +314,8 @@ with tab_retro:
         with st.spinner(f"Récupération de la météo de {prior_start_year} à {test_year} pour {profile.city}..."):
             try:
                 lat, lon, official_name = require_location(locate(profile.city), profile.city)
-                df_all = correct_dataframe(fetch_historical_precipitation(lat, lon, f"{prior_start_year}-01-01", f"{test_year}-12-31"),
-                                           active_calibration)
+                raw, fetched_at = fetch_precipitation_cached(lat, lon, f"{prior_start_year}-01-01", f"{test_year}-12-31")
+                df_all = correct_dataframe(raw, active_calibration)
                 # Années civiles : le contrat rétrospectif est souscrit au 1er janvier de l'année a
                 periods = split_into_coverage_periods(df_all, 1, 1, prior_start_year, test_year)
                 if test_year not in periods:
@@ -341,6 +344,7 @@ with tab_retro:
                     "pricing": retro_pricing,
                     "n_prior": len(prior),
                     "correction": source_note(active_calibration),
+                    "fetched": fetched_label(fetched_at),
                     "analysis": analysis,
                     "missing_days": sum(p["missing_days"] for p in periods.values()),
                 }
@@ -354,7 +358,7 @@ with tab_retro:
         a = retro["year"]
         analysis = retro["analysis"]
         premium = analysis["premium"]
-        st.caption(f"Point de grille météo : {retro['station']}. {retro['correction']}")
+        st.caption(f"Point de grille météo : {retro['station']}. {retro['correction']} {retro['fetched']}")
         missing_days_warning(retro["missing_days"])
         st.metric(f"Prime calculée a priori début {a} (P_a)", fmt_eur(premium))
         st.caption(
@@ -405,8 +409,8 @@ with tab_retro:
         with st.spinner(f"Récupération de la météo de {first_needed} à {year_range[1]} pour {profile.city}..."):
             try:
                 lat, lon, official_name = require_location(locate(profile.city), profile.city)
-                df_all = correct_dataframe(fetch_historical_precipitation(lat, lon, f"{first_needed}-01-01", f"{year_range[1]}-12-31"),
-                                           active_calibration)
+                raw, fetched_at = fetch_precipitation_cached(lat, lon, f"{first_needed}-01-01", f"{year_range[1]}-12-31")
+                df_all = correct_dataframe(raw, active_calibration)
                 periods = split_into_coverage_periods(df_all, 1, 1, first_needed, year_range[1])
                 backtest = run_multi_year_backtest(
                     periods, profile, list(range(year_range[0], year_range[1] + 1)),
@@ -419,6 +423,7 @@ with tab_retro:
                     "station": official_name,
                     "range": year_range,
                     "correction": source_note(active_calibration),
+                    "fetched": fetched_label(fetched_at),
                     "backtest": backtest,
                 }
             except (WeatherAPIError, ValueError) as e:
@@ -429,7 +434,8 @@ with tab_retro:
         st.info("Les paramètres ont changé depuis la dernière analyse : relancez-la pour mettre à jour les résultats.")
     elif multi:
         summary, table = multi["backtest"]["summary"], multi["backtest"]["table"]
-        st.caption(f"Point de grille météo : {multi['station']} — {summary['n_years']} années rejouées. {multi['correction']}")
+        st.caption(f"Point de grille météo : {multi['station']} — {summary['n_years']} années rejouées. "
+                   f"{multi['correction']} {multi['fetched']}")
         k1, k2, k3 = st.columns(3)
         k1.metric("Ratio sinistres / primes (S/P)", fmt_pct(summary["loss_ratio"]),
                   help="Indemnités versées / primes encaissées sur la période. Sous 100 %, le produit est rentable pour l'assureur.")
@@ -480,7 +486,10 @@ with tab_guide:
        antérieures), ou une plage d'années (ratio sinistres / primes, part des années favorables).
 
     ### Source météo et limites
-    Les précipitations viennent d'Open-Meteo, qui s'appuie sur les **réanalyses ERA5 / ERA5-Land** : des valeurs
+    Les précipitations sont téléchargées au moment du calcul puis gardées 6 heures en mémoire (l'archive n'est mise
+    à jour qu'une fois par jour) ; l'heure de récupération est indiquée sous chaque résultat.
+
+    Elles viennent d'Open-Meteo, qui s'appuie sur les **réanalyses ERA5 / ERA5-Land** : des valeurs
     calculées sur un **point de grille** d'environ 10 à 25 km, et non les relevés d'une station au sol. Les réanalyses
     ont tendance à **lisser les fortes pluies** et à compter **trop de jours de pluie faible**. Dans ce modèle, toute
     pluie réduit le chiffre d'affaires : le nombre de jours pluvieux et l'intensité des épisodes pèsent donc
