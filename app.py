@@ -135,7 +135,12 @@ st.sidebar.info(
 )
 
 st.sidebar.header("Paramètres actuariels")
-hist_years = st.sidebar.slider("Années d'historique météo utilisées pour tarifer", min_value=5, max_value=30, value=15)
+hist_years = st.sidebar.slider(
+    "Années d'historique météo utilisées pour tarifer", min_value=5, max_value=30, value=15,
+    help=("15 ans par défaut : testé sur 2001-2025 à Nice, Brest et Strasbourg, c'est la longueur qui prédit le mieux "
+          "les indemnités suivantes. Moins d'années rend la prime instable ; plus d'années la met en retard sur "
+          "l'évolution du climat (détails dans le guide, section 4)."),
+)
 safety_beta = st.sidebar.slider(
     "Chargement de sécurité β (× écart-type)",
     min_value=0.0, max_value=1.0, value=0.30, step=0.05,

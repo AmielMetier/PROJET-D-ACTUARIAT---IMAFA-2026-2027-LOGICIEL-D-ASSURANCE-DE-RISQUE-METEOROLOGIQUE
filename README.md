@@ -87,7 +87,7 @@ La prime commerciale annuelle applique le **principe de l'écart-type** (le char
 $$P = \frac{\mathbb{E}[I] + \beta \cdot \sigma(I)}{1 - \alpha}$$
 *(où $\beta$ est le coefficient de chargement de sécurité, 0,30 par défaut, et $\alpha$ le taux de frais de gestion).*
 
-Le choix $\beta = 0{,}30$ est justifié par un backtest sur 2001-2025 : sans chargement, le produit aurait perdu de l'argent à Nice, Brest et Strasbourg ; avec 0,30, il est rentable à Nice et Strasbourg pour un chargement de 6 à 10 % de la prime pure. La VaR 95 % des indemnités est affichée à titre indicatif : estimée sur 15 années, elle est peu fiable et n'entre pas dans la prime. Détails dans la section 4 du [guide](docs/USER_GUIDE.md).
+Le choix $\beta = 0{,}30$ est justifié par un backtest sur 2001-2025 : sans chargement, le produit aurait perdu de l'argent à Nice, Brest et Strasbourg ; avec 0,30, il est rentable à Nice et Strasbourg pour un chargement de 6 à 10 % de la prime pure. La VaR 95 % des indemnités est affichée à titre indicatif : estimée sur 15 années, elle est peu fiable et n'entre pas dans la prime. La longueur d'historique de 15 ans est justifiée de la même façon : c'est elle qui prédit le mieux les indemnités des années suivantes (erreur moyenne de 12,6 %, contre 17,5 % avec 5 ans et 13,6 % avec 30 ans), avec une prime stable. Détails dans la section 4 du [guide](docs/USER_GUIDE.md).
 
 ### 5. Analyse rétrospective
 Pour une année passée $a$, la prime $P_a$ est calculée **a priori**, comme au 1er janvier de $a$, avec les seules années antérieures. Elle est ensuite comparée aux résultats réellement observés pendant $a$ : s'assurer a été favorable si les indemnités reçues dépassent $P_a$.

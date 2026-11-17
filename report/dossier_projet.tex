@@ -235,6 +235,47 @@ $\sigma(I) = \eur{3\,030{,}57}$, chargement $\beta\sigma = \eur{909{,}17}$, d'o�
 $P = (11\,146{,}27 + 909{,}17)/0{,}85 = \eur{14\,182{,}87}$.
 \end{encadre}
 
+\subsection{Pourquoi un chargement de sécurité ?}
+La prime pure $\mathbb{E}[I]$ est le \textbf{coût moyen}. Un assureur qui ne ferait payer que cette moyenne serait à
+l'équilibre \emph{en moyenne seulement} et perdrait de l'argent chaque année plus pluvieuse que la moyenne, sans réserve
+pour l'absorber. Le chargement $\beta\,\sigma(I)$ constitue cette marge. Quatre raisons le rendent indispensable :
+\begin{enumerate}
+  \item \textbf{Un risque très variable} : à Nice, $\sigma(I) \approx 27\,\%$ de $\mathbb{E}[I]$. Avec la seule prime pure,
+        le contrat rejoué sur 2001-2025 aurait coûté plus qu'il ne rapporte \textbf{11 années sur 25}, jusqu'à $+65\,\%$,
+        et l'assureur aurait fini en perte.
+  \item \textbf{Une estimation incertaine} : sur 15 ans, l'erreur type de $\mathbb{E}[I]$ vaut $\sigma/\sqrt{15} \approx 0{,}26\,\sigma$.
+  \item \textbf{Un risque non mutualisable} : tous les commerçants d'une ville subissent la même pluie le même jour.
+        Contrairement à l'assurance automobile, avoir plus de clients ne rend pas le total plus prévisible.
+  \item \textbf{Un climat qui évolue} : une estimation sur le passé est en retard sur un risque en hausse (Brest : $+22\,\%$).
+\end{enumerate}
+
+\textbf{Pourquoi $\beta\,\sigma(I)$ (principe de l'écart-type) ?} Avec un chargement en pourcentage de la prime pure
+(principe de l'espérance, notre première version), deux clients de même prime pure paieraient la même prime même si l'un
+a un risque bien plus irrégulier. Avec $\beta\,\sigma(I)$, le risque irrégulier paie davantage, ce qui reflète le capital
+que l'assureur doit immobiliser. L'écart-type étant en euros, $\beta$ s'interprète directement : avec $\beta = 0{,}30$, la
+prime chargée correspond au 62\textsuperscript{e} centile d'une loi normale et couvre environ une erreur type d'estimation.
+
+\textbf{Sources.} Le principe de l'écart-type $H = \mathbb{E}[S] + \rho\,\sigma(S)$ est un principe classique de calcul de
+prime ; les auteurs notent le coefficient $\rho$, $\alpha$ ou $\theta$ au lieu de $\beta$ :
+\begin{itemize}
+  \item cours ACT2060, \emph{Calcul de la prime}, section 2.1.3 « Chargement de sécurité » :
+        \url{https://bookdown.org/boucherjphilippe/ACT2060/calcul-de-la-prime.html} ;
+  \item D.~Denneberg, « Premium Calculation: Why Standard Deviation Should Be Replaced by Absolute Deviation »,
+        \emph{ASTIN Bulletin} 20(2), 1990, p.~181-190 :
+        \url{https://www.casact.org/abstract/premium-calculation-why-standard-deviation-should-be-replaced-absolute-deviation} ;
+  \item R.~Kaas, M.~Goovaerts, J.~Dhaene, M.~Denuit, \emph{Modern Actuarial Risk Theory}, Springer, chapitre
+        « Premium principles and Risk measures » : \url{https://link.springer.com/10.1007/978-3-540-70998-5}.
+\end{itemize}
+\textbf{Limite connue} : ce principe n'est pas additif (la prime de deux risques regroupés n'est pas la somme de leurs
+primes, critique de Denneberg). Sans conséquence pour tarifer un contrat seul ; pour un portefeuille, le principe de la
+variance, additif pour des risques indépendants, serait préférable.
+
+\begin{encadre}
+\textbf{À dire à l'oral.} « La prime pure est une moyenne : avec elle seule, l'assureur perd de l'argent une année sur
+deux et ne peut pas compenser par le nombre de clients, puisqu'ils subissent tous la même pluie. Le chargement est
+proportionnel à l'écart-type : plus le risque est irrégulier, plus il coûte. »
+\end{encadre}
+
 \subsection{Pourquoi \texorpdfstring{$\beta = 0{,}30$}{beta = 0,30} ?}
 L'assureur gagne de l'argent si les indemnités restent inférieures à la \textbf{prime nette de frais} $P(1-\alpha)$.
 Nous avons rejoué le contrat sur 2001-2025 dans trois climats (chaque année tarifée a priori) :
@@ -261,6 +302,37 @@ $\beta$ & Nice : sinistres / prime nette & Nice : années favorables & Brest & S
         de supplément ; le client reste gagnant plus d'une année sur trois à Nice.
   \item Limite : à Brest il faudrait $\beta \approx 1$ ; le curseur permet d'ajuster $\beta$ par région.
 \end{itemize}
+
+\subsection{Pourquoi 15 années d'historique ?}
+Le choix de $N$ est un compromis : \textbf{trop peu d'années, trop de hasard} (l'incertitude sur la prime pure vaut
+$\sigma(I)/\sqrt{N}$) ; \textbf{trop d'années, un retard sur le climat} (à Brest, les indemnités moyennes ont augmenté de
+22\,\% entre 1971-1995 et 2001-2025). Le contrat a été rejoué sur 2001-2025 avec $N$ de 5 à 30 ans ; la précision est
+l'écart entre la prime pure d'une année et les indemnités réellement versées en moyenne sur les 5 années suivantes.
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{cccc}
+\toprule
+$N$ & Erreur de prédiction (3 villes) & Variation annuelle de la prime & Sous-estimation à Brest\\
+\midrule
+5 & 17,5\,\% & 4,5 à 7,7\,\% & 5\,\%\\
+10 & 15,5\,\% & 2,9 à 3,4\,\% & 10\,\%\\
+\textbf{15} & \textbf{12,6\,\%} & \textbf{1,6 à 2,3\,\%} & 12\,\%\\
+20 & 13,0\,\% & 1,2 à 2,0\,\% & 14\,\%\\
+30 & 13,6\,\% & 1,0 à 1,3\,\% & 15\,\%\\
+\bottomrule
+\end{tabular}
+\caption{Contrat rejoué sur 2001-2025 à Nice, Brest et Strasbourg selon la longueur d'historique.}
+\end{table}
+
+15 ans donne la plus faible erreur de prédiction, avec une prime déjà stable ; au-delà, on ne gagne presque plus en
+stabilité mais on suit moins bien le climat. L'écart avec 20 ans est faible : les deux se valent, 15 est retenu pour
+mieux suivre l'évolution du climat.
+
+\begin{encadre}
+\textbf{À dire à l'oral.} « Avec 5 ans, la prime dépend trop du hasard ; avec 30 ans, elle est en retard sur le climat.
+Testé sur 25 ans dans trois villes, 15 ans donne la meilleure prédiction avec une prime stable. »
+\end{encadre}
 
 \subsection{La VaR 95 \% : affichée, mais fragile}
 La VaR 95\,\% (indemnités dépassées une année sur vingt) est affichée à titre indicatif. Avec 15 années, ce centile
