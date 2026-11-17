@@ -63,6 +63,7 @@ Dans la barre latérale gauche, renseignez les paramètres du commerçant :
 - **Coûts fixes journaliers ($Cf$)** : frais incompressibles quotidiens. Le champ est automatiquement limité à $CA - 1$ € ($CA > Cf$).
 - **Niveau de pluie pivot ($\bar{pl}$)** : seuil journalier en millimètres au-delà duquel l'activité s'arrête ($CA = 0$).
 - **Date de souscription** (aujourd'hui ou plus tard).
+- **Jours de fermeture hebdomadaire** (facultatif, ouvert 7 jours sur 7 par défaut) : un jour de fermeture ne fait ni chiffre d'affaires ni coûts fixes et n'est **pas indemnisé**, même s'il pleut. Les coûts fixes $Cf$ s'entendent alors **par jour d'ouverture** (coûts fixes annuels divisés par le nombre de jours ouverts). Le nombre de jours d'ouverture couverts s'affiche sous le profil et figure sur le devis. Exemple : à Nice, fermer le dimanche (313 jours ouverts sur 365) fait passer la prime commerciale de 14 184 € à 11 655 € (souscription au 17/11/2026, profil par défaut).
 
 > Le logiciel calcule immédiatement le **seuil critique de perte journalière** :
 > $$pl_{\text{seuil}} = \bar{pl} \times \left(1 - \frac{Cf}{CA}\right)$$

@@ -14,7 +14,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-from .simulation import ClientProfile
+from .simulation import ClientProfile, WEEKDAYS_FR, open_days_count
 from .pricing import coverage_end
 from .formatting import fmt_eur, fmt_num, fmt_pct
 
@@ -38,6 +38,8 @@ def make_quote_ref(profile: ClientProfile, issued: Optional[date] = None) -> str
     """
     issued = issued or date.today()
     key = f"{profile.city}|{profile.ca_max}|{profile.cf}|{profile.pl_pivot}|{profile.subscription_date}"
+    if profile.closed_weekdays:  # ne change pas la référence des devis sans jour de fermeture
+        key += f"|{profile.closed_weekdays}"
     digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:6].upper()
     return f"DEV-{issued:%Y%m%d}-{digest}"
 
@@ -140,6 +142,8 @@ def generate_devis_pdf(
         ["Ville d'activité :", profile.city, "Date de prise d'effet :", f"{sub:%d/%m/%Y}"],
         ["CA max. journalier (CA) :", fmt_eur(profile.ca_max), "Coûts fixes journaliers (Cf) :", fmt_eur(profile.cf)],
         ["Pluie pivot journalière :", f"{fmt_num(profile.pl_pivot, 1)} mm", "Fin de couverture :", f"{end:%d/%m/%Y} (365 jours)"],
+        ["Fermeture hebdomadaire :", ", ".join(WEEKDAYS_FR[d].lower() for d in profile.closed_weekdays) or "aucune",
+         "Jours d'ouverture couverts :", f"{open_days_count(sub, 365, profile)} jours"],
     ]
     elements.append(_boxed_table(client_data, [130, 125, 140, 120]))
 
@@ -148,7 +152,7 @@ def generate_devis_pdf(
     seuil_perte = profile.pl_pivot * (1 - profile.cf / profile.ca_max)
     elements.append(Paragraph(
         f"L'assurance garantit au souscripteur un <b>résultat d'exploitation journalier supérieur ou égal à 0 €</b> "
-        f"chaque jour de la période de couverture. Dès que la pluie journalière dépasse <b>{fmt_num(seuil_perte)} mm</b>, "
+        f"chaque jour d'ouverture de la période de couverture. Dès que la pluie journalière dépasse <b>{fmt_num(seuil_perte)} mm</b>, "
         f"l'indemnité compense intégralement le déficit du jour (au plus {fmt_eur(profile.cf)} par jour, soit les coûts fixes). "
         f"Le déclenchement est paramétrique : il dépend uniquement de la pluie mesurée, sans expertise du sinistre.",
         normal,

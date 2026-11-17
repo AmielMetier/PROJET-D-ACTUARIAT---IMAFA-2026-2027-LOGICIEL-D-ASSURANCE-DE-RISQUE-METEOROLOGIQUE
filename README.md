@@ -77,6 +77,8 @@ $$pl^* = \overline{pl} \left(1 - \frac{Cf}{CA}\right)$$
 Le contrat garantit un résultat journalier positif ou nul ($R \ge 0$). L'indemnité journalière versée par l'assureur est donc :
 $$I_t = \max(0, -R_t^{pl})$$
 
+Le commerçant peut indiquer ses **jours de fermeture hebdomadaire** : ces jours-là, ni chiffre d'affaires, ni coûts fixes, ni indemnité ($Cf$ est alors le coût fixe par jour d'ouverture).
+
 Sur l'ensemble des 365 jours, le résultat non assuré et le résultat garanti brut sont :
 $$R_{nass} = \sum_{t=1}^{365} R_t^{pl}, \qquad R_{ass} = \sum_{t=1}^{365} (R_t^{pl} + I_t) = R_{nass} + \sum_{t=1}^{365} I_t$$
 

@@ -138,6 +138,12 @@ l'assureur verse \eur{200} et le résultat garanti du jour vaut 0. À 5 mm : $CA
 C'est une assurance \textbf{paramétrique} : l'indemnité dépend uniquement de la pluie mesurée, pas d'une expertise
 du sinistre. C'est ce qui permet de la calculer automatiquement à partir de données météo.
 
+\paragraph{Jours de fermeture (ajout).} Le sujet suppose un commerce ouvert tous les jours. Le logiciel permet
+d'indiquer des jours de fermeture hebdomadaire : ces jours-là, ni chiffre d'affaires, ni coûts fixes, ni indemnité,
+même s'il pleut ; $Cf$ s'entend alors par jour d'ouverture. À Nice, fermer le dimanche (313 jours ouverts sur 365)
+fait passer la prime commerciale de \eur{14\,184} à \eur{11\,655}, soit $-18\,\%$ : un peu plus que la part de jours
+retirés ($-14\,\%$), car l'effet dépend de la pluie tombée ces jours-là dans l'historique.
+
 % =====================================================================
 \section{Les données météo}
 

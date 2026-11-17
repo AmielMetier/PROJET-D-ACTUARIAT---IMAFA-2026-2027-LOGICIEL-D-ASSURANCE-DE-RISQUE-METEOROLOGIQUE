@@ -7,7 +7,7 @@ from datetime import date, timedelta
 import streamlit as st
 import pandas as pd
 
-from src.simulation import ClientProfile
+from src.simulation import ClientProfile, WEEKDAYS_FR, open_days_count
 from src.pricing import price_contract_historical, split_into_coverage_periods, coverage_end
 from src.backtesting import run_retrospective_analysis, run_multi_year_backtest
 from src.visualisations import plot_retrospective_comparison, plot_cumulative_results, plot_multi_year_backtest
@@ -119,19 +119,30 @@ cf = st.sidebar.number_input(
 )
 pl_pivot = st.sidebar.number_input("Niveau de Pluie Pivot (mm)", min_value=1.0, value=10.0, step=0.5)
 sub_date = st.sidebar.date_input("Date de souscription", value=date.today(), min_value=date.today())
+closed_days = st.sidebar.multiselect(
+    "Jours de fermeture hebdomadaire",
+    options=list(range(7)),
+    format_func=lambda d: WEEKDAYS_FR[d],
+    placeholder="Ouvert 7 jours sur 7",
+    help=("Un jour de fermeture ne fait ni chiffre d'affaires ni coûts fixes et n'est pas indemnisé, même s'il pleut. "
+          "Les coûts fixes s'entendent alors par jour d'ouverture (coûts fixes annuels ÷ nombre de jours ouverts)."),
+)
 
 profile = ClientProfile(
     ca_max=float(ca_max),
     cf=float(cf),
     pl_pivot=float(pl_pivot),
     city=city,
-    subscription_date=str(sub_date)
+    subscription_date=str(sub_date),
+    closed_weekdays=tuple(closed_days),
 )
+open_days = open_days_count(sub_date, 365, profile)
 
 seuil_critique = profile.pl_pivot * (1 - profile.cf / profile.ca_max)
 st.sidebar.info(
     f"**Seuil de perte journalière** : à partir de **{fmt_num(seuil_critique)} mm** de pluie, "
     f"le résultat d'exploitation devient négatif et l'assurance s'active."
+    + (f" Jours d'ouverture couverts sur l'année : **{open_days}** sur 365." if profile.closed_weekdays else "")
 )
 
 st.sidebar.header("Paramètres actuariels")
@@ -176,7 +187,7 @@ active_calibration = calibration if use_correction else None
 
 # Empreinte des paramètres qui influencent les calculs : sert à détecter des résultats périmés
 params_key = (
-    profile.city.strip().lower(), profile.ca_max, profile.cf, profile.pl_pivot,
+    profile.city.strip().lower(), profile.ca_max, profile.cf, profile.pl_pivot, profile.closed_weekdays,
     hist_years, safety_beta, expense_rate, use_correction
 )
 
@@ -476,6 +487,8 @@ with tab_guide:
     - $CA_t^{pl} = f_t^{pl} \\times CA$, avec $f_t^{pl} = \\frac{\\overline{pl} - pl_t}{\\overline{pl}}$ (0 au-delà du pivot, 1 sans pluie)
     - $R_t^{pl} = CA_t^{pl} - Cf$
     - Indemnité : $I_t = \\max(0, -R_t^{pl})$, ce qui garantit un résultat journalier $\\geq 0$
+    - Jours de fermeture (optionnels) : ni chiffre d'affaires, ni coûts fixes, ni indemnité ; $Cf$ est alors le
+      coût fixe par jour d'ouverture
     - Seuil critique : $pl_{seuil} = \\overline{pl} \\left(1 - \\frac{Cf}{CA}\\right)$
 
     ### Tarification
@@ -483,7 +496,8 @@ with tab_guide:
     - Prime commerciale $= \\dfrac{E[I] + \\beta \\, \\sigma(I)}{1 - \\text{frais}}$ (principe de l'écart-type).
 
     ### Navigation
-    1. **Barre latérale** : profil du commerce (ville, CA max, coûts fixes, pluie pivot, date de souscription)
+    1. **Barre latérale** : profil du commerce (ville, CA max, coûts fixes, pluie pivot, date de souscription,
+       jours de fermeture)
        et paramètres actuariels (historique, β, frais). La localité météo retenue s'affiche sous la ville.
     2. **Tarification** : la prime couvre les 365 jours à partir de la date de souscription ; elle est estimée sur les
        mêmes périodes des années passées. Renseignez le nom et la raison sociale, puis téléchargez le devis PDF.
