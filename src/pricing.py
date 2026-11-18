@@ -52,7 +52,9 @@ def split_into_coverage_periods(
         if missing_days > MAX_MISSING_SHARE * expected_days:
             continue
         periods[year] = {
-            "precipitation": window["precipitation"].reset_index(drop=True),
+            # Indexée par date : permet de repérer les jours de fermeture du commerce
+            "precipitation": pd.Series(window["precipitation"].to_numpy(), index=pd.DatetimeIndex(window["date"]),
+                                       name="precipitation"),
             "start": start.date(),
             "end": (end - pd.Timedelta(days=1)).date(),
             "missing_days": missing_days,

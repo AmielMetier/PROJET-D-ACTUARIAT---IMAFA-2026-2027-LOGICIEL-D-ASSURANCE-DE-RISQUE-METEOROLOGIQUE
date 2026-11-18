@@ -56,7 +56,7 @@ Le logiciel répond aux exigences des trois départements de la compagnie :
 
 Le projet met également l'accent sur les critères de valorisation du barème :
 - **Digitalisation & Responsive Web/Mobile** : interface web développée avec **Streamlit** et visualisations **Plotly**, utilisable depuis un ordinateur ou un téléphone.
-- **Données Météorologiques en Temps Réel** : précipitations journalières téléchargées au moment du calcul depuis l'API Open-Meteo (réanalyses ERA5, point de grille le plus proche de la ville), sans clé d'API, puis **corrigées sur la station au sol la plus proche** (méthode des quantiles, 25 villes calées sur les relevés NCEI, correction activée par défaut dans les 14 où elle améliore le tarif), ce qui supprime l'essentiel du surcoût d'environ 13 % de la réanalyse.
+- **Données Météorologiques en Temps Réel** : précipitations journalières téléchargées au moment du calcul depuis l'API Open-Meteo (réanalyses ERA5, point de grille le plus proche de la ville), sans clé d'API, puis **corrigées sur la station au sol la plus proche** (méthode des quantiles, 25 villes calées sur les relevés NCEI, correction activée par défaut dans les 14 où elle améliore le tarif), ce qui supprime l'essentiel du surcoût d'environ 13 % de la réanalyse. Chaque téléchargement est gardé **6 heures en mémoire** : l'archive n'est mise à jour qu'une fois par jour, et ce cache accélère les calculs et protège l'application de la limite de requêtes d'Open-Meteo.
 
 ---
 
@@ -77,6 +77,8 @@ $$pl^* = \overline{pl} \left(1 - \frac{Cf}{CA}\right)$$
 Le contrat garantit un résultat journalier positif ou nul ($R \ge 0$). L'indemnité journalière versée par l'assureur est donc :
 $$I_t = \max(0, -R_t^{pl})$$
 
+Le commerçant peut indiquer ses **jours de fermeture hebdomadaire** : ces jours-là, ni chiffre d'affaires, ni coûts fixes, ni indemnité ($Cf$ est alors le coût fixe par jour d'ouverture).
+
 Sur l'ensemble des 365 jours, le résultat non assuré et le résultat garanti brut sont :
 $$R_{nass} = \sum_{t=1}^{365} R_t^{pl}, \qquad R_{ass} = \sum_{t=1}^{365} (R_t^{pl} + I_t) = R_{nass} + \sum_{t=1}^{365} I_t$$
 
@@ -87,7 +89,7 @@ La prime commerciale annuelle applique le **principe de l'écart-type** (le char
 $$P = \frac{\mathbb{E}[I] + \beta \cdot \sigma(I)}{1 - \alpha}$$
 *(où $\beta$ est le coefficient de chargement de sécurité, 0,30 par défaut, et $\alpha$ le taux de frais de gestion).*
 
-Le choix $\beta = 0{,}30$ est justifié par un backtest sur 2001-2025 : sans chargement, le produit aurait perdu de l'argent à Nice, Brest et Strasbourg ; avec 0,30, il est rentable à Nice et Strasbourg pour un chargement de 6 à 10 % de la prime pure. La VaR 95 % des indemnités est affichée à titre indicatif : estimée sur 15 années, elle est peu fiable et n'entre pas dans la prime. Détails dans la section 4 du [guide](docs/USER_GUIDE.md).
+Le choix $\beta = 0{,}30$ est justifié par un backtest sur 2001-2025 : sans chargement, le produit aurait perdu de l'argent à Nice, Brest et Strasbourg ; avec 0,30, il est rentable à Nice et Strasbourg pour un chargement de 6 à 10 % de la prime pure. La VaR 95 % des indemnités est affichée à titre indicatif : estimée sur 15 années, elle est peu fiable et n'entre pas dans la prime. La longueur d'historique de 15 ans est justifiée de la même façon : c'est elle qui prédit le mieux les indemnités des années suivantes (erreur moyenne de 12,6 %, contre 17,5 % avec 5 ans et 13,6 % avec 30 ans), avec une prime stable. Détails dans la section 4 du [guide](docs/USER_GUIDE.md).
 
 ### 5. Analyse rétrospective
 Pour une année passée $a$, la prime $P_a$ est calculée **a priori**, comme au 1er janvier de $a$, avec les seules années antérieures. Elle est ensuite comparée aux résultats réellement observés pendant $a$ : s'assurer a été favorable si les indemnités reçues dépassent $P_a$.
